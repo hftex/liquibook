@@ -952,15 +952,15 @@ OrderBook<OrderPtr>::create_trade(Tracker& inbound_tracker,
   // If current order is a market order, cross at inbound price
   if (MARKET_ORDER_PRICE == cross_price) {
     cross_price = inbound_tracker.ptr()->price();
-  }
-  if(MARKET_ORDER_PRICE == cross_price)
-  {
-    cross_price = marketPrice_;
-  }
-  if(MARKET_ORDER_PRICE == cross_price)
-  {
-    // No price available for this order
-    return 0;
+    if(MARKET_ORDER_PRICE == cross_price)
+    {
+      cross_price = marketPrice_;
+      if(MARKET_ORDER_PRICE == cross_price)
+      {
+        // No price available for this order
+        return 0;
+      }
+    }
   }
   Quantity fill_qty = 
     (std::min)(maxQuantity,
