@@ -635,39 +635,17 @@ template <class OrderPtr>
 bool
 OrderBook<OrderPtr>::add_order(Tracker& inbound, Price order_price)
 {
-  bool matched = false;
-  OrderPtr& order = inbound.ptr();
   DeferredMatches deferred_aons;
   // Try to match with current orders
-  if (order->is_buy()) {
-    matched = match_order(inbound, order_price, asks_, deferred_aons);
-  } else {
-    matched = match_order(inbound, order_price, bids_, deferred_aons);
-  }
-
-  // If order has remaining open quantity and is not immediate or cancel
-  if (inbound.open_qty() && !inbound.immediate_or_cancel()) {
-    // If this is a buy order
-    if (order->is_buy()) 
-    {
-      // Insert into bids
-      bids_.insert(std::make_pair(ComparablePrice(true, order_price), inbound));
-      // and see if that satisfies any ask orders
-      if(check_deferred_aons(deferred_aons, asks_, bids_))
-      {
-        matched = true;
-      }
-    } 
-    else 
-    {
-      // Else this is a sell order
-      // Insert into asks
-      asks_.insert(std::make_pair(ComparablePrice(false, order_price), inbound));
-      if(check_deferred_aons(deferred_aons, bids_, asks_))
-      {
-        matched = true;
-      }
-    }
+  bool is_buy = inbound.ptr()->is_buy();
+  auto& asks = is_buy ? asks_ : bids_;
+  auto& bids = is_buy ? bids_ : asks_; 
+  bool matched = match_order(inbound, order_price, asks, deferred_aons);
+  if (!inbound.filled() && !inbound.immediate_or_cancel()) {
+    // Insert into 'bids'
+    bids.insert({ComparablePrice(is_buy, order_price), inbound});
+    // and see if that satisfies any 'ask' orders
+    matched |= check_deferred_aons(deferred_aons, asks, bids);
   }
   return matched;
 }
