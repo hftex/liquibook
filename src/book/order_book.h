@@ -160,33 +160,33 @@ protected:
   /// @return true if a match occurred 
   virtual bool match_order(Tracker& inbound_order, 
     Price inbound_price, 
-    TrackerMap& current_orders,
-    DeferredMatches & deferred_aons);
+    TrackerMap& current_orders/*,
+    DeferredMatches & deferred_aons*/);
 
-  bool match_aon_order(Tracker& inbound, 
-    Price inbound_price, 
-    TrackerMap& current_orders,
-    DeferredMatches & deferred_aons);
+  // bool match_aon_order(Tracker& inbound, 
+  //   Price inbound_price, 
+  //   TrackerMap& current_orders,
+  //   DeferredMatches & deferred_aons);
 
   bool match_regular_order(Tracker& inbound, 
     Price inbound_price, 
-    TrackerMap& current_orders,
-    DeferredMatches & deferred_aons);
+    TrackerMap& current_orders/*,
+    DeferredMatches & deferred_aons*/);
 
-  Quantity try_create_deferred_trades(
-    Tracker& inbound,
-    DeferredMatches & deferred_matches, 
-    Quantity maxQty, // do not exceed
-    Quantity minQty, // must be at least
-    TrackerMap& current_orders);
+  // Quantity try_create_deferred_trades(
+  //   Tracker& inbound,
+  //   DeferredMatches & deferred_matches, 
+  //   Quantity maxQty, // do not exceed
+  //   Quantity minQty, // must be at least
+  //   TrackerMap& current_orders);
 
-  /// @brief see if any deferred All Or None orders can now execute.
-  /// @param aons iterators to the orders that might now match
-  /// @param deferredTrackers the container of the aons
-  /// @param marketTrackers the orders to check for matches
-  bool check_deferred_aons(DeferredMatches & aons, 
-    TrackerMap & deferredTrackers, 
-    TrackerMap & marketTrackers);
+  // /// @brief see if any deferred All Or None orders can now execute.
+  // /// @param aons iterators to the orders that might now match
+  // /// @param deferredTrackers the container of the aons
+  // /// @param marketTrackers the orders to check for matches
+  // bool check_deferred_aons(DeferredMatches & aons, 
+  //   TrackerMap & deferredTrackers, 
+  //   TrackerMap & marketTrackers);
 
   /// @brief perform fill on two orders
   /// @param inbound_tracker the new (or changed) order tracker
@@ -635,45 +635,45 @@ template <class OrderPtr>
 bool
 OrderBook<OrderPtr>::add_order(Tracker& inbound, Price order_price)
 {
-  DeferredMatches deferred_aons;
+  // DeferredMatches deferred_aons;
   // Try to match with current orders
   bool is_buy = inbound.ptr()->is_buy();
   auto& asks = is_buy ? asks_ : bids_;
   auto& bids = is_buy ? bids_ : asks_; 
-  bool matched = match_order(inbound, order_price, asks, deferred_aons);
+  bool matched = match_order(inbound, order_price, asks/*, deferred_aons*/);
   if (!inbound.filled() && !inbound.immediate_or_cancel()) {
     // Insert into 'bids'
     bids.insert({ComparablePrice(is_buy, order_price), inbound});
     // and see if that satisfies any 'ask' orders
-    matched |= check_deferred_aons(deferred_aons, asks, bids);
+    // matched |= check_deferred_aons(deferred_aons, asks, bids);
   }
   return matched;
 }
 
-template <class OrderPtr>
-bool
-OrderBook<OrderPtr>::check_deferred_aons(DeferredMatches & aons, 
-  TrackerMap & deferredTrackers, 
-  TrackerMap & marketTrackers)
-{
-  bool result = false;
-  DeferredMatches ignoredAons;
+// template <class OrderPtr>
+// bool
+// OrderBook<OrderPtr>::check_deferred_aons(DeferredMatches & aons, 
+//   TrackerMap & deferredTrackers, 
+//   TrackerMap & marketTrackers)
+// {
+//   bool result = false;
+//   DeferredMatches ignoredAons;
 
-  for(auto pos = aons.begin(); pos != aons.end(); ++pos)
-  {
-    auto entry = *pos;
-    ComparablePrice current_price = entry->first;
-    Tracker & tracker = entry->second;
-    bool matched = match_order(tracker, current_price.price(), 
-      marketTrackers, ignoredAons);
-    result |= matched;
-    if(tracker.filled())
-    {
-      deferredTrackers.erase(entry);
-    }
-  }
-  return result;
-}
+//   for(auto pos = aons.begin(); pos != aons.end(); ++pos)
+//   {
+//     auto entry = *pos;
+//     ComparablePrice current_price = entry->first;
+//     Tracker & tracker = entry->second;
+//     bool matched = match_order(tracker, current_price.price(), 
+//       marketTrackers, ignoredAons);
+//     result |= matched;
+//     if(tracker.filled())
+//     {
+//       deferredTrackers.erase(entry);
+//     }
+//   }
+//   return result;
+// }
 
 ///  Try to match order at 'price' against 'current' orders
 ///  If successful
@@ -683,22 +683,22 @@ template <class OrderPtr>
 bool
 OrderBook<OrderPtr>::match_order(Tracker& inbound, 
   Price inbound_price, 
-  TrackerMap& current_orders,
-  DeferredMatches & deferred_aons)
+  TrackerMap& current_orders/*,
+  DeferredMatches & deferred_aons*/)
 {
-  if(inbound.all_or_none())
-  {
-    return match_aon_order(inbound, inbound_price, current_orders, deferred_aons);
-  }
-  return match_regular_order(inbound, inbound_price, current_orders, deferred_aons);
+  // if(inbound.all_or_none())
+  // {
+  //   return match_aon_order(inbound, inbound_price, current_orders, deferred_aons);
+  // }
+  return match_regular_order(inbound, inbound_price, current_orders/*, deferred_aons*/);
 }
 
 template <class OrderPtr>
 bool
 OrderBook<OrderPtr>::match_regular_order(Tracker& inbound, 
   Price inbound_price, 
-  TrackerMap& current_orders,
-  DeferredMatches & deferred_aons)
+  TrackerMap& current_orders/*,
+  DeferredMatches & deferred_aons*/)
 {
   // while incoming ! satisfied
   //   current is reg->trade
@@ -707,7 +707,7 @@ OrderBook<OrderPtr>::match_regular_order(Tracker& inbound,
   //    add AON to deferred
   // loop
   bool matched = false;
-  Quantity inbound_qty = inbound.open_qty();
+  // Quantity inbound_qty = inbound.open_qty();
   typename TrackerMap::iterator pos = current_orders.begin(); 
   while(pos != current_orders.end() && !inbound.filled()) 
   {
@@ -724,31 +724,31 @@ OrderBook<OrderPtr>::match_regular_order(Tracker& inbound,
     Tracker & current_order = entry->second;
     Quantity current_quantity = current_order.open_qty();
 
-    if(current_order.all_or_none())
-    {
-      // if the inbound order can satisfy the current order's AON condition
-      if(current_quantity <= inbound_qty)
-      {
-        // current is AON, inbound is not AON.
-        // inbound can satisfy current's AON
-        Quantity traded = create_trade(inbound, current_order);
-        if(traded > 0)
-        {
-          matched = true;
-          // assert traded == current_quantity
-          current_orders.erase(entry);
-          inbound_qty -= traded;
-        }
-      }
-      else
-      {
-        // current is AON, inbound is not AON.
-        // inbound is not enough to satisfy current order's AON
-        deferred_aons.push_back(entry);
-      }
-    }
-    else 
-    {
+    // if(current_order.all_or_none())
+    // {
+    //   // if the inbound order can satisfy the current order's AON condition
+    //   if(current_quantity <= inbound_qty)
+    //   {
+    //     // current is AON, inbound is not AON.
+    //     // inbound can satisfy current's AON
+    //     Quantity traded = create_trade(inbound, current_order);
+    //     if(traded > 0)
+    //     {
+    //       matched = true;
+    //       // assert traded == current_quantity
+    //       current_orders.erase(entry);
+    //       inbound_qty -= traded;
+    //     }
+    //   }
+    //   else
+    //   {
+    //     // current is AON, inbound is not AON.
+    //     // inbound is not enough to satisfy current order's AON
+    //     deferred_aons.push_back(entry);
+    //   }
+    // }
+    // else 
+    // {
       // neither are AON
       Quantity traded = create_trade(inbound, current_order);
       if(traded > 0)
@@ -758,189 +758,189 @@ OrderBook<OrderPtr>::match_regular_order(Tracker& inbound,
         {
           current_orders.erase(entry);
         }
-        inbound_qty -= traded;
+        // inbound_qty -= traded;
       }
-    }
+    // }
   }
   return matched;
 }
 
-template <class OrderPtr>
-bool
-OrderBook<OrderPtr>::match_aon_order(Tracker& inbound, 
-  Price inbound_price, 
-  TrackerMap& current_orders,
-  DeferredMatches & deferred_aons)
-{
-  bool matched = false;
-  Quantity inbound_qty = inbound.open_qty();
-  Quantity deferred_qty = 0;
+// template <class OrderPtr>
+// bool
+// OrderBook<OrderPtr>::match_aon_order(Tracker& inbound, 
+//   Price inbound_price, 
+//   TrackerMap& current_orders,
+//   DeferredMatches & deferred_aons)
+// {
+//   bool matched = false;
+//   Quantity inbound_qty = inbound.open_qty();
+//   Quantity deferred_qty = 0;
 
-  DeferredMatches deferred_matches;
+//   DeferredMatches deferred_matches;
 
-  typename TrackerMap::iterator pos = current_orders.begin(); 
-  while(pos != current_orders.end() && !inbound.filled()) 
-  {
-    auto entry = pos++;
-    const ComparablePrice current_price = entry->first;
-    if(!current_price.matches(inbound_price))
-    {
-      // no more trades against current orders are possible
-      break;
-    }
+//   typename TrackerMap::iterator pos = current_orders.begin(); 
+//   while(pos != current_orders.end() && !inbound.filled()) 
+//   {
+//     auto entry = pos++;
+//     const ComparablePrice current_price = entry->first;
+//     if(!current_price.matches(inbound_price))
+//     {
+//       // no more trades against current orders are possible
+//       break;
+//     }
 
-    //////////////////////////////////////
-    // Current price matches inbound price
-    Tracker & current_order = entry->second;
-    Quantity current_quantity = current_order.open_qty();
+//     //////////////////////////////////////
+//     // Current price matches inbound price
+//     Tracker & current_order = entry->second;
+//     Quantity current_quantity = current_order.open_qty();
 
-    if(current_order.all_or_none())
-    {
-      // AON::AON
-      // if the inbound order can satisfy the current order's AON condition
-      if(current_quantity <= inbound_qty)
-      {
-        // if the the matched quantity can satisfy
-        // the inbound order's AON condition
-        if(inbound_qty <= current_quantity + deferred_qty)
-        {
-          // Try to create the deferred trades (if any) before creating
-          // the trade with the current order.
-          // What quantity will we need from the deferred orders?
-          Quantity maxQty = inbound_qty - current_quantity;
-          if(maxQty == try_create_deferred_trades(
-            inbound, 
-            deferred_matches, 
-            maxQty, 
-            maxQty, 
-            current_orders))
-          {
-            inbound_qty -= maxQty;
-            // finally execute this trade
-            Quantity traded = create_trade(inbound, current_order);
-            if(traded > 0)
-            {
-              // assert traded == current_quantity
-              inbound_qty -= traded;
-              matched = true;
-              current_orders.erase(entry);
-            }
-          }
-        }
-        else
-        {
-          // AON::AON -- inbound could satisfy current, but
-          // current cannot satisfy inbound;
-          deferred_qty += current_quantity;
-          deferred_matches.push_back(entry);
-        }
-      }
-      else
-      {
-        // AON::AON -- inbound cannot satisfy current's AON
-        deferred_aons.push_back(entry);
-      }
-    }
-    else 
-    {
-      // AON::REG
+//     if(current_order.all_or_none())
+//     {
+//       // AON::AON
+//       // if the inbound order can satisfy the current order's AON condition
+//       if(current_quantity <= inbound_qty)
+//       {
+//         // if the the matched quantity can satisfy
+//         // the inbound order's AON condition
+//         if(inbound_qty <= current_quantity + deferred_qty)
+//         {
+//           // Try to create the deferred trades (if any) before creating
+//           // the trade with the current order.
+//           // What quantity will we need from the deferred orders?
+//           Quantity maxQty = inbound_qty - current_quantity;
+//           if(maxQty == try_create_deferred_trades(
+//             inbound, 
+//             deferred_matches, 
+//             maxQty, 
+//             maxQty, 
+//             current_orders))
+//           {
+//             inbound_qty -= maxQty;
+//             // finally execute this trade
+//             Quantity traded = create_trade(inbound, current_order);
+//             if(traded > 0)
+//             {
+//               // assert traded == current_quantity
+//               inbound_qty -= traded;
+//               matched = true;
+//               current_orders.erase(entry);
+//             }
+//           }
+//         }
+//         else
+//         {
+//           // AON::AON -- inbound could satisfy current, but
+//           // current cannot satisfy inbound;
+//           deferred_qty += current_quantity;
+//           deferred_matches.push_back(entry);
+//         }
+//       }
+//       else
+//       {
+//         // AON::AON -- inbound cannot satisfy current's AON
+//         deferred_aons.push_back(entry);
+//       }
+//     }
+//     else 
+//     {
+//       // AON::REG
 
-      // if we have enough to satisfy inbound
-      if(inbound_qty <= current_quantity + deferred_qty)
-      {        
-        Quantity traded = try_create_deferred_trades(
-          inbound, 
-          deferred_matches, 
-          inbound_qty, // create as many as possible
-          (inbound_qty > current_quantity) ? (inbound_qty - current_quantity) : 0, // but we need at least this many
-          current_orders);
-        if(inbound_qty <= current_quantity + traded)
-        {
-          traded += create_trade(inbound, current_order);
-          if(traded > 0)
-          {
-            inbound_qty -= traded;
-            matched = true;
-          }
-          if(current_order.filled())
-          {
-            current_orders.erase(entry);
-          }
-        }
-      }
-      else
-      {
-        // not enough to satisfy inbound, yet.
-        // remember the current order for later use
-        deferred_qty += current_quantity;
-        deferred_matches.push_back(entry);
-      }
-    }
-  }
-  return matched;
-}
-namespace {
-  const size_t AON_LIMIT = 5;
-}
+//       // if we have enough to satisfy inbound
+//       if(inbound_qty <= current_quantity + deferred_qty)
+//       {        
+//         Quantity traded = try_create_deferred_trades(
+//           inbound, 
+//           deferred_matches, 
+//           inbound_qty, // create as many as possible
+//           (inbound_qty > current_quantity) ? (inbound_qty - current_quantity) : 0, // but we need at least this many
+//           current_orders);
+//         if(inbound_qty <= current_quantity + traded)
+//         {
+//           traded += create_trade(inbound, current_order);
+//           if(traded > 0)
+//           {
+//             inbound_qty -= traded;
+//             matched = true;
+//           }
+//           if(current_order.filled())
+//           {
+//             current_orders.erase(entry);
+//           }
+//         }
+//       }
+//       else
+//       {
+//         // not enough to satisfy inbound, yet.
+//         // remember the current order for later use
+//         deferred_qty += current_quantity;
+//         deferred_matches.push_back(entry);
+//       }
+//     }
+//   }
+//   return matched;
+// }
+// namespace {
+//   const size_t AON_LIMIT = 5;
+// }
 
-template <class OrderPtr>
-Quantity
-OrderBook<OrderPtr>::try_create_deferred_trades(
-  Tracker& inbound,
-  DeferredMatches & deferred_matches, 
-  Quantity maxQty, // do not exceed
-  Quantity minQty, // must be at least
-  TrackerMap& current_orders)
-{
-  Quantity traded = 0;
-  // create a vector of proposed trade quantities:
-  std::vector<int> fills(deferred_matches.size());
-  std::fill(fills.begin(), fills.end(), 0);
-  Quantity foundQty = 0;
-  auto pos = deferred_matches.begin(); 
-  for(size_t index = 0;
-    foundQty < maxQty && pos != deferred_matches.end();
-    ++index)
-  {
-    auto entry = *pos++;
-    Tracker & tracker = entry->second;
-    Quantity qty = tracker.open_qty();
-    // if this would put us over the limit
-    if(foundQty + qty > maxQty)
-    {
-      if(tracker.all_or_none())
-      {
-        qty = 0;
-      }
-      else
-      {
-        qty = maxQty - foundQty;
-        // assert qty <= tracker.open_qty();
-      }
-    }
-    foundQty += qty;
-    fills[index] = qty;
-  }
+// template <class OrderPtr>
+// Quantity
+// OrderBook<OrderPtr>::try_create_deferred_trades(
+//   Tracker& inbound,
+//   DeferredMatches & deferred_matches, 
+//   Quantity maxQty, // do not exceed
+//   Quantity minQty, // must be at least
+//   TrackerMap& current_orders)
+// {
+//   Quantity traded = 0;
+//   // create a vector of proposed trade quantities:
+//   std::vector<int> fills(deferred_matches.size());
+//   std::fill(fills.begin(), fills.end(), 0);
+//   Quantity foundQty = 0;
+//   auto pos = deferred_matches.begin(); 
+//   for(size_t index = 0;
+//     foundQty < maxQty && pos != deferred_matches.end();
+//     ++index)
+//   {
+//     auto entry = *pos++;
+//     Tracker & tracker = entry->second;
+//     Quantity qty = tracker.open_qty();
+//     // if this would put us over the limit
+//     if(foundQty + qty > maxQty)
+//     {
+//       if(tracker.all_or_none())
+//       {
+//         qty = 0;
+//       }
+//       else
+//       {
+//         qty = maxQty - foundQty;
+//         // assert qty <= tracker.open_qty();
+//       }
+//     }
+//     foundQty += qty;
+//     fills[index] = qty;
+//   }
 
-  if(foundQty >= minQty && foundQty <= maxQty)
-  {
-    // pass through deferred matches again, doing the trades.
-    auto pos = deferred_matches.begin(); 
-    for(size_t index = 0;
-      traded < foundQty && pos != deferred_matches.end();
-      ++index)
-    {
-      auto entry = *pos++;
-      Tracker & tracker = entry->second;
-      traded += create_trade(inbound, tracker, fills[index]);
-      if(tracker.filled())
-      {
-        current_orders.erase(entry);
-      }
-    }
-  }
-  return traded;
-}
+//   if(foundQty >= minQty && foundQty <= maxQty)
+//   {
+//     // pass through deferred matches again, doing the trades.
+//     auto pos = deferred_matches.begin(); 
+//     for(size_t index = 0;
+//       traded < foundQty && pos != deferred_matches.end();
+//       ++index)
+//     {
+//       auto entry = *pos++;
+//       Tracker & tracker = entry->second;
+//       traded += create_trade(inbound, tracker, fills[index]);
+//       if(tracker.filled())
+//       {
+//         current_orders.erase(entry);
+//       }
+//     }
+//   }
+//   return traded;
+// }
 
 template <class OrderPtr>
 Quantity
