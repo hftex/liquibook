@@ -21,6 +21,8 @@
 #include <functional>
 #include <algorithm>
 
+#include <btree_map.h>
+
 #ifdef LIQUIBOOK_IGNORES_DEPRECATED_CALLS
 #define COMPLAIN_ONCE(message)
 #else // LIQUIBOOK_IGNORES_DEPRECATED_CALLS
@@ -56,7 +58,7 @@ public:
   typedef TradeListener<MyClass > TypedTradeListener;
   typedef OrderBookListener<MyClass > TypedOrderBookListener;
   typedef std::vector<TypedCallback > Callbacks;
-  typedef std::multimap<ComparablePrice, Tracker> TrackerMap;
+  typedef btree::btree_multimap<ComparablePrice, Tracker> TrackerMap;
   typedef std::vector<Tracker> TrackerVec;
   // Keep this around briefly for compatibility.
   typedef TrackerMap Bids;
