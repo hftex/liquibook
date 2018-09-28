@@ -15,6 +15,8 @@ public:
   /// @brief construct
   OrderTracker(const OrderPtr& order, OrderConditions conditions = 0);
 
+  OrderTracker() = default;
+
   /// @brief modify the order quantity
   void change_qty(int32_t delta);
 
