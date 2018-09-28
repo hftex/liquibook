@@ -35,6 +35,8 @@ public:
   {
   }
 
+  ComparablePrice() = default;
+
   /// @brief Check possible trade
   /// Assumes rhs is on the opposite side
   bool matches(Price rhs) const
