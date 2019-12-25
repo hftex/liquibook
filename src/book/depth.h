@@ -18,7 +18,7 @@ namespace liquibook { namespace book {
 ///
 /// TODO: Fix the bid and ask methods to behave like a normal iterator (i.e. begin(), back(), and end()
 
-template <int SIZE=5> 
+template <int SIZE=5>
 class Depth {
 public:
   /// @brief construct
@@ -50,7 +50,7 @@ public:
   /// @param is_bid indicator of bid or ask
   void add_order(Price price, Quantity qty, bool is_bid);
 
-  /// @brief ignore future fill quantity on a side, due to a match at 
+  /// @brief ignore future fill quantity on a side, due to a match at
   ///        accept time for an order
   /// @param qty the open quantity to ignore
   /// @param is_bid indicator of bid or ask
@@ -61,8 +61,8 @@ public:
   /// @param fill_qty the quantity of this fill
   /// @param filled was this order completely filled?
   /// @param is_bid indicator of bid or ask
-  void fill_order(Price price, 
-                  Quantity fill_qty, 
+  void fill_order(Price price,
+                  Quantity fill_qty,
                   bool filled,
                   bool is_bid);
   /// @brief cancel or fill an order
@@ -146,7 +146,7 @@ private:
   void erase_level(DepthLevel* level, bool is_bid);
 };
 
-template <int SIZE> 
+template <int SIZE>
 Depth<SIZE>::Depth()
 : last_change_(0),
   last_published_change_(0),
@@ -156,70 +156,70 @@ Depth<SIZE>::Depth()
   memset(levels_, 0, sizeof(DepthLevel) * SIZE * 2);
 }
 
-template <int SIZE> 
-inline const DepthLevel* 
+template <int SIZE>
+inline const DepthLevel*
 Depth<SIZE>::bids() const
 {
   return levels_;
 }
 
-template <int SIZE> 
-inline const DepthLevel* 
+template <int SIZE>
+inline const DepthLevel*
 Depth<SIZE>::asks() const
 {
   return levels_ + SIZE;
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline const DepthLevel*
 Depth<SIZE>::last_bid_level() const
 {
   return levels_ + (SIZE - 1);
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline const DepthLevel*
 Depth<SIZE>::last_ask_level() const
 {
   return levels_ + (SIZE * 2 - 1);
 }
 
-template <int SIZE> 
-inline const DepthLevel* 
+template <int SIZE>
+inline const DepthLevel*
 Depth<SIZE>::end() const
 {
   return levels_ + (SIZE * 2);
 }
 
-template <int SIZE> 
-inline DepthLevel* 
+template <int SIZE>
+inline DepthLevel*
 Depth<SIZE>::bids()
 {
   return levels_;
 }
 
-template <int SIZE> 
-inline DepthLevel* 
+template <int SIZE>
+inline DepthLevel*
 Depth<SIZE>::asks()
 {
   return levels_ + SIZE;
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline DepthLevel*
 Depth<SIZE>::last_bid_level()
 {
   return levels_ + (SIZE - 1);
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline DepthLevel*
 Depth<SIZE>::last_ask_level()
 {
   return levels_ + (SIZE * 2 - 1);
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline void
 Depth<SIZE>::add_order(Price price, Quantity qty, bool is_bid)
 {
@@ -237,7 +237,7 @@ Depth<SIZE>::add_order(Price price, Quantity qty, bool is_bid)
   }
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline void
 Depth<SIZE>::ignore_fill_qty(Quantity qty, bool is_bid)
 {
@@ -251,14 +251,14 @@ Depth<SIZE>::ignore_fill_qty(Quantity qty, bool is_bid)
       throw std::runtime_error("Unexpected ignore_ask_fill_qty_");
     }
     ignore_ask_fill_qty_ = qty;
-  }  
+  }
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline void
 Depth<SIZE>::fill_order(
-  Price price, 
-  Quantity fill_qty, 
+  Price price,
+  Quantity fill_qty,
   bool filled,
   bool is_bid)
 {
@@ -273,7 +273,7 @@ Depth<SIZE>::fill_order(
   }
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline bool
 Depth<SIZE>::close_order(Price price, Quantity open_qty, bool is_bid)
 {
@@ -291,7 +291,7 @@ Depth<SIZE>::close_order(Price price, Quantity open_qty, bool is_bid)
   return false;
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline void
 Depth<SIZE>::change_qty_order(Price price, int32_t qty_delta, bool is_bid)
 {
@@ -306,8 +306,8 @@ Depth<SIZE>::change_qty_order(Price price, int32_t qty_delta, bool is_bid)
   }
   // Ignore if not found - may be beyond our depth size
 }
- 
-template <int SIZE> 
+
+template <int SIZE>
 inline bool
 Depth<SIZE>::replace_order(
   Price current_price,
@@ -333,7 +333,7 @@ Depth<SIZE>::replace_order(
   return erased;
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline bool
 Depth<SIZE>::needs_bid_restoration(Price& restoration_price)
 {
@@ -354,7 +354,7 @@ Depth<SIZE>::needs_bid_restoration(Price& restoration_price)
   throw std::runtime_error("Depth size less than one not allowed");
 }
 
-template <int SIZE> 
+template <int SIZE>
 inline bool
 Depth<SIZE>::needs_ask_restoration(Price& restoration_price)
 {
@@ -375,13 +375,15 @@ Depth<SIZE>::needs_ask_restoration(Price& restoration_price)
   throw std::runtime_error("Depth size less than one not allowed");
 }
 
-template <int SIZE> 
+template <int SIZE>
 DepthLevel*
 Depth<SIZE>::find_level(Price price, bool is_bid, bool should_create)
 {
   // Find starting and ending point
-  DepthLevel* level = is_bid ? bids() : asks();
-  const DepthLevel* past_end = is_bid ? asks() : end();
+  DepthLevel* level = is_bid ? bids()
+        : asks();
+  const DepthLevel* past_end = is_bid ? asks()
+        : end();
   // Linear search each level
   for ( ; level != past_end; ++level) {
     if (level->price() == price) {
@@ -439,13 +441,14 @@ Depth<SIZE>::find_level(Price price, bool is_bid, bool should_create)
   return level;
 }
 
-template <int SIZE> 
+template <int SIZE>
 void
-Depth<SIZE>::insert_level_before(DepthLevel* level, 
+Depth<SIZE>::insert_level_before(DepthLevel* level,
                                  bool is_bid,
                                  Price price)
 {
-  DepthLevel* last_side_level = is_bid ? last_bid_level() : last_ask_level();
+  DepthLevel* last_side_level = is_bid ? last_bid_level()
+        : last_ask_level();
 
   // If the last level has valid data
   if (last_side_level->price() != INVALID_LEVEL_PRICE) {
@@ -480,7 +483,7 @@ Depth<SIZE>::insert_level_before(DepthLevel* level,
    level->init(price, false);
 }
 
-template <int SIZE> 
+template <int SIZE>
 void
 Depth<SIZE>::erase_level(DepthLevel* level, bool is_bid)
 {
@@ -493,7 +496,8 @@ Depth<SIZE>::erase_level(DepthLevel* level, bool is_bid)
     }
   // Else the level being erased is not excess, copy over from those worse
   } else {
-    DepthLevel* last_side_level = is_bid ? last_bid_level() : last_ask_level();
+    DepthLevel* last_side_level = is_bid ? last_bid_level()
+        : last_ask_level();
     // Increment once
     ++last_change_;
     DepthLevel* current_level = level;
@@ -542,7 +546,7 @@ Depth<SIZE>::erase_level(DepthLevel* level, bool is_bid)
   }
 }
 
-template <int SIZE> 
+template <int SIZE>
 bool
 Depth<SIZE>::changed() const
 {
@@ -550,14 +554,14 @@ Depth<SIZE>::changed() const
 }
 
 
-template <int SIZE> 
+template <int SIZE>
 ChangeId
 Depth<SIZE>::last_change() const
 {
   return last_change_;
 }
 
-template <int SIZE> 
+template <int SIZE>
 ChangeId
 Depth<SIZE>::last_published_change() const
 {
@@ -565,7 +569,7 @@ Depth<SIZE>::last_published_change() const
 }
 
 
-template <int SIZE> 
+template <int SIZE>
 void
 Depth<SIZE>::published()
 {

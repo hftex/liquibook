@@ -41,7 +41,7 @@ namespace liquibook
 namespace book
 {
 
-template <class OrderPtr>
+template <typename OrderPtr>
 class OrderListener;
 
 template <class OrderBook>
@@ -55,9 +55,9 @@ class OrderBook
 {
 public:
   typedef OrderTracker<OrderPtr> Tracker;
-  typedef Callback<OrderPtr> TypedCallback;
+  typedef Callback<OrderPtr, Multimap> TypedCallback;
   typedef OrderListener<OrderPtr> TypedOrderListener;
-  typedef OrderBook<OrderPtr> MyClass;
+  typedef OrderBook<OrderPtr, Multimap> MyClass;
   typedef TradeListener<MyClass> TypedTradeListener;
   typedef OrderBookListener<MyClass> TypedOrderBookListener;
   typedef std::vector<TypedCallback> Callbacks;
@@ -143,6 +143,28 @@ public:
   /// so don't bother to call it in new code.
   virtual void perform_callbacks();
 
+  virtual void perform_callback_accept(const OrderPtr &order, Quantity quantity) {}
+  virtual void perform_callback_pre_accept(const OrderPtr &order) {}
+  virtual void perform_callback_fill(const OrderPtr &inbound_order,
+                                     const OrderPtr &matched_order,
+                                     const Quantity &fill_qty,
+                                     const Price &fill_price,
+                                     bool taker_filled,
+                                     bool maker_filled) {}
+  virtual void perform_callback_reject(const OrderPtr &order,
+                                       const char *reason) {}
+  virtual void perform_callback_cancel(const OrderPtr &order,
+                                       const Quantity &open_qty) {}
+  virtual void perform_callback_cancel_reject(const OrderPtr &order,
+                                              const char *reason) {}
+  virtual void perform_callback_replace(const OrderPtr &order,
+                                        const Quantity &curr_open_qty,
+                                        const int32_t &size_delta,
+                                        const Price &new_price) {}
+  virtual void perform_callback_replace_reject(const OrderPtr &order,
+                                               const char *reason) {}
+  virtual void perform_callback_book_update(const TypedCallback &cb) {}
+
   /// @brief log the orders in the book.
   std::ostream &log(std::ostream &out) const;
 
@@ -150,10 +172,10 @@ protected:
   /// @brief Internal method to process callbacks.
   /// Protected against recursive calls in case callbacks
   /// issue new requests.
-  void callback_now();
+  // void callback_now();
 
   /// @brief perform an individual callback
-  virtual void perform_callback(TypedCallback &cb);
+  virtual void perform_callback(const TypedCallback &cb);
 
   /// @brief match a new order to current orders
   /// @param inbound_order the inbound order
@@ -296,8 +318,8 @@ private:
   TrackerMap stopAsks_;
   TrackerVec pendingOrders_;
 
-  Callbacks callbacks_;
-  bool handling_callbacks_;
+  // Callbacks callbacks_;
+  // bool handling_callbacks_;
   TypedOrderListener *order_listener_;
   TypedTradeListener *trade_listener_;
   TypedOrderBookListener *order_book_listener_;
@@ -305,40 +327,40 @@ private:
   Price marketPrice_;
 };
 
-template <class OrderPtr>
-OrderBook<OrderPtr>::OrderBook(const std::string &symbol)
+template <typename OrderPtr, template <typename...> typename Multimap>
+OrderBook<OrderPtr, Multimap>::OrderBook(const std::string &symbol)
     : symbol_(symbol),
-      handling_callbacks_(false),
+      // handling_callbacks_(false),
       order_listener_(nullptr),
       trade_listener_(nullptr),
       order_book_listener_(nullptr),
       logger_(nullptr),
       marketPrice_(MARKET_ORDER_PRICE)
 {
-  callbacks_.reserve(16); // Why 16?  Why not?
+  // callbacks_.reserve(1024); // Why 16?  Why not?
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::set_logger(Logger *logger)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::set_logger(Logger *logger)
 {
   logger_ = logger;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::set_symbol(const std::string &symbol)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::set_symbol(const std::string &symbol)
 {
   symbol_ = symbol;
 }
 
-template <class OrderPtr>
+template <typename OrderPtr, template <typename...> typename Multimap>
 const std::string &
-OrderBook<OrderPtr>::symbol() const
+OrderBook<OrderPtr, Multimap>::symbol() const
 {
   return symbol_;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::set_market_price(Price price)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::set_market_price(Price price)
 {
   Price oldMarketPrice = marketPrice_;
   marketPrice_ = price;
@@ -358,44 +380,45 @@ void OrderBook<OrderPtr>::set_market_price(Price price)
 
 /// @brief Get current market price.
 /// The market price is normally the price at which the last trade happened.
-template <class OrderPtr>
-Price OrderBook<OrderPtr>::market_price() const
+template <typename OrderPtr, template <typename...> typename Multimap>
+Price OrderBook<OrderPtr, Multimap>::market_price() const
 {
   return marketPrice_;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::set_order_listener(TypedOrderListener *listener)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::set_order_listener(TypedOrderListener *listener)
 {
   order_listener_ = listener;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::set_trade_listener(TypedTradeListener *listener)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::set_trade_listener(TypedTradeListener *listener)
 {
   trade_listener_ = listener;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::set_order_book_listener(TypedOrderBookListener *listener)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::set_order_book_listener(TypedOrderBookListener *listener)
 {
   order_book_listener_ = listener;
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::add(const OrderPtr &order, OrderConditions conditions)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::add(const OrderPtr &order, OrderConditions conditions)
 {
   bool matched = false;
 
   // If the order is invalid, ignore it
   if (order->order_qty() == 0)
   {
-    callbacks_.push_back(TypedCallback::reject(order, "size must be positive"));
+    perform_callback_reject(order, "size must be positive");
   }
   else
   {
-    size_t accept_cb_index = callbacks_.size();
-    callbacks_.push_back(TypedCallback::accept(order));
+    // size_t accept_cb_index = callbacks_.size();
+    // perform_callback(TypedCallback::accept(order));
+    perform_callback_pre_accept(order);
     Tracker inbound(order, conditions);
     if (inbound.ptr()->stop_price() != 0 && add_stop_order(inbound))
     {
@@ -405,13 +428,17 @@ bool OrderBook<OrderPtr>::add(const OrderPtr &order, OrderConditions conditions)
     {
       matched = submit_order(inbound);
       // Note the filled qty in the accept callback
-      callbacks_[accept_cb_index].quantity = inbound.filled_qty();
+      if (!inbound.filled())
+      {
+        perform_callback_accept(order, inbound.filled_qty());
+      }
+      // callbacks_[accept_cb_index].quantity = inbound.filled_qty();
 
       // Cancel any unfilled IOC order
       if (inbound.immediate_or_cancel() && !inbound.filled())
       {
         // NOTE - this may need he actual open qty???
-        callbacks_.push_back(TypedCallback::cancel(order, 0));
+        perform_callback_cancel(order, 0);
       }
     }
     // If adding this order triggered any stops
@@ -420,14 +447,14 @@ bool OrderBook<OrderPtr>::add(const OrderPtr &order, OrderConditions conditions)
     {
       submit_pending_orders();
     }
-    callbacks_.push_back(TypedCallback::book_update(this));
+    perform_callback_book_update(TypedCallback::book_update(this));
   }
-  callback_now();
+  // callback_now();
   return matched;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::cancel(const OrderPtr &order)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::cancel(const OrderPtr &order)
 {
   bool found = false;
   Quantity open_qty;
@@ -460,19 +487,18 @@ void OrderBook<OrderPtr>::cancel(const OrderPtr &order)
   // If the cancel was found, issue callback
   if (found)
   {
-    callbacks_.push_back(TypedCallback::cancel(order, open_qty));
-    callbacks_.push_back(TypedCallback::book_update(this));
+    perform_callback_cancel(order, open_qty);
+    perform_callback_book_update(TypedCallback::book_update(this));
   }
   else
   {
-    callbacks_.push_back(
-        TypedCallback::cancel_reject(order, "not found"));
+    perform_callback_cancel_reject(order, "not found");
   }
-  callback_now();
+  // callback_now();
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::replace(
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::replace(
     const OrderPtr &order,
     int32_t size_delta,
     Price new_price)
@@ -480,7 +506,8 @@ bool OrderBook<OrderPtr>::replace(
   bool matched = false;
   bool price_change = new_price && (new_price != order->price());
 
-  Price price = (new_price == PRICE_UNCHANGED) ? order->price() : new_price;
+  Price price = (new_price == PRICE_UNCHANGED) ? order->price()
+        : new_price;
 
   // If the order to replace is a buy order
   TrackerMap &market = order->is_buy() ? bids_ : asks_;
@@ -498,23 +525,20 @@ bool OrderBook<OrderPtr>::replace(
       {
         // if there is nothing to get rid of
         // Reject the replace
-        callbacks_.push_back(TypedCallback::replace_reject(tracker.ptr(),
-                                                           "order is already filled"));
+        perform_callback_replace_reject(tracker.ptr(), "order is already filled");
         return false;
       }
     }
 
     // Accept the replace
-    callbacks_.push_back(
-        TypedCallback::replace(order, pos->second.open_qty(), size_delta,
-                               price));
+    perform_callback_replace(order, pos->second.open_qty(), size_delta, price);
     Quantity new_open_qty = pos->second.open_qty() + size_delta;
     pos->second.change_qty(size_delta); // Update my copy
     // If the size change will close the order
     if (!new_open_qty)
     {
       // Cancel with NO open qty (should be zero after replace)
-      callbacks_.push_back(TypedCallback::cancel(order, 0));
+      perform_callback_cancel(order, 0);
       market.erase(pos); // Remove order
     }
     else
@@ -532,20 +556,19 @@ bool OrderBook<OrderPtr>::replace(
     {
       submit_pending_orders();
     }
-    callbacks_.push_back(TypedCallback::book_update(this));
+    perform_callback_book_update(TypedCallback::book_update(this));
   }
   else
   {
     // not found
-    callbacks_.push_back(
-        TypedCallback::replace_reject(order, "not found"));
+    perform_callback_replace_reject(order, "not found");
   }
-  callback_now();
+  // callback_now();
   return matched;
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::add_stop_order(Tracker &tracker)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::add_stop_order(Tracker &tracker)
 {
   bool isBuy = tracker.ptr()->is_buy();
   ComparablePrice key(isBuy, tracker.ptr()->stop_price());
@@ -565,8 +588,8 @@ bool OrderBook<OrderPtr>::add_stop_order(Tracker &tracker)
   return isStopped;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::check_stop_orders(bool side, Price price, TrackerMap &stops)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::check_stop_orders(bool side, Price price, TrackerMap &stops)
 {
   ComparablePrice until(side, price);
   auto pos = stops.begin();
@@ -582,8 +605,8 @@ void OrderBook<OrderPtr>::check_stop_orders(bool side, Price price, TrackerMap &
   }
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::submit_pending_orders()
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::submit_pending_orders()
 {
   TrackerVec pending;
   pending.swap(pendingOrders_);
@@ -594,15 +617,15 @@ void OrderBook<OrderPtr>::submit_pending_orders()
   }
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::submit_order(Tracker &inbound)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::submit_order(Tracker &inbound)
 {
   Price order_price = inbound.ptr()->price();
   return add_order(inbound, order_price);
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::find_on_market(
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::find_on_market(
     const OrderPtr &order,
     typename TrackerMap::iterator &result)
 {
@@ -629,8 +652,8 @@ bool OrderBook<OrderPtr>::find_on_market(
 // Try to match order.  Generate trades.
 // If not completely filled and not IOC,
 // add the order to the order book
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::add_order(Tracker &inbound, Price order_price)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::add_order(Tracker &inbound, Price order_price)
 {
   DeferredMatches deferred_aons;
   // Try to match with current orders
@@ -648,10 +671,10 @@ bool OrderBook<OrderPtr>::add_order(Tracker &inbound, Price order_price)
   return matched;
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::check_deferred_aons(DeferredMatches &aons,
-                                              TrackerMap &deferredTrackers,
-                                              TrackerMap &marketTrackers)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::check_deferred_aons(DeferredMatches &aons,
+                                                        TrackerMap &deferredTrackers,
+                                                        TrackerMap &marketTrackers)
 {
   bool result = false;
   DeferredMatches ignoredAons;
@@ -676,11 +699,11 @@ bool OrderBook<OrderPtr>::check_deferred_aons(DeferredMatches &aons,
 ///  If successful
 ///    generate trade(s)
 ///    if any current order is complete, remove from 'current' orders
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::match_order(Tracker &inbound,
-                                      Price inbound_price,
-                                      TrackerMap &current_orders,
-                                      DeferredMatches &deferred_aons)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::match_order(Tracker &inbound,
+                                                Price inbound_price,
+                                                TrackerMap &current_orders,
+                                                DeferredMatches &deferred_aons)
 {
   if (inbound.all_or_none())
   {
@@ -689,11 +712,11 @@ bool OrderBook<OrderPtr>::match_order(Tracker &inbound,
   return match_regular_order(inbound, inbound_price, current_orders, deferred_aons);
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::match_regular_order(Tracker &inbound,
-                                              Price inbound_price,
-                                              TrackerMap &current_orders,
-                                              DeferredMatches &deferred_aons)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::match_regular_order(Tracker &inbound,
+                                                        Price inbound_price,
+                                                        TrackerMap &current_orders,
+                                                        DeferredMatches &deferred_aons)
 {
   // while incoming ! satisfied
   //   current is reg->trade
@@ -703,10 +726,10 @@ bool OrderBook<OrderPtr>::match_regular_order(Tracker &inbound,
   // loop
   bool matched = false;
   Quantity inbound_qty = inbound.open_qty();
-  typename TrackerMap::iterator pos = current_orders.begin();
-  while (pos != current_orders.end() && !inbound.filled())
+  // typename TrackerMap::iterator pos = current_orders.begin();
+  while (!current_orders.empty() && !inbound.filled())
   {
-    auto entry = pos++;
+    auto entry = current_orders.begin();
     const ComparablePrice &current_price = entry->first;
     if (!current_price.matches(inbound_price))
     {
@@ -760,11 +783,11 @@ bool OrderBook<OrderPtr>::match_regular_order(Tracker &inbound,
   return matched;
 }
 
-template <class OrderPtr>
-bool OrderBook<OrderPtr>::match_aon_order(Tracker &inbound,
-                                          Price inbound_price,
-                                          TrackerMap &current_orders,
-                                          DeferredMatches &deferred_aons)
+template <typename OrderPtr, template <typename...> typename Multimap>
+bool OrderBook<OrderPtr, Multimap>::match_aon_order(Tracker &inbound,
+                                                    Price inbound_price,
+                                                    TrackerMap &current_orders,
+                                                    DeferredMatches &deferred_aons)
 {
   bool matched = false;
   Quantity inbound_qty = inbound.open_qty();
@@ -846,7 +869,8 @@ bool OrderBook<OrderPtr>::match_aon_order(Tracker &inbound,
             inbound,
             deferred_matches,
             inbound_qty,                                                             // create as many as possible
-            (inbound_qty > current_quantity) ? (inbound_qty - current_quantity) : 0, // but we need at least this many
+            (inbound_qty > current_quantity) ? (inbound_qty - current_quantity)
+        : 0, // but we need at least this many
             current_orders);
         if (inbound_qty <= current_quantity + traded)
         {
@@ -878,9 +902,9 @@ namespace
 const size_t AON_LIMIT = 5;
 }
 
-template <class OrderPtr>
+template <typename OrderPtr, template <typename...> typename Multimap>
 Quantity
-OrderBook<OrderPtr>::try_create_deferred_trades(
+OrderBook<OrderPtr, Multimap>::try_create_deferred_trades(
     Tracker &inbound,
     DeferredMatches &deferred_matches,
     Quantity maxQty, // do not exceed
@@ -937,11 +961,11 @@ OrderBook<OrderPtr>::try_create_deferred_trades(
   return traded;
 }
 
-template <class OrderPtr>
+template <typename OrderPtr, template <typename...> typename Multimap>
 Quantity
-OrderBook<OrderPtr>::create_trade(Tracker &inbound_tracker,
-                                  Tracker &current_tracker,
-                                  Quantity maxQuantity)
+OrderBook<OrderPtr, Multimap>::create_trade(Tracker &inbound_tracker,
+                                            Tracker &current_tracker,
+                                            Quantity maxQuantity)
 {
   Price cross_price = current_tracker.ptr()->price();
   // If current order is a market order, cross at inbound price
@@ -959,96 +983,52 @@ OrderBook<OrderPtr>::create_trade(Tracker &inbound_tracker,
     }
   }
   Quantity fill_qty =
-      (std::min)(maxQuantity,
-                 (std::min)(inbound_tracker.open_qty(),
-                            current_tracker.open_qty()));
+      std::min(maxQuantity,
+               std::min(inbound_tracker.open_qty(),
+                        current_tracker.open_qty()));
   if (fill_qty > 0)
   {
     inbound_tracker.fill(fill_qty);
     current_tracker.fill(fill_qty);
     set_market_price(cross_price);
 
-    typename TypedCallback::FillFlags fill_flags =
-        TypedCallback::ff_neither_filled;
-    if (!inbound_tracker.open_qty())
-    {
-      fill_flags = (typename TypedCallback::FillFlags)(
-          fill_flags | TypedCallback::ff_inbound_filled);
-    }
-    if (!current_tracker.open_qty())
-    {
-      fill_flags = (typename TypedCallback::FillFlags)(
-          fill_flags | TypedCallback::ff_matched_filled);
-    }
-
-    callbacks_.push_back(TypedCallback::fill(inbound_tracker.ptr(),
-                                             current_tracker.ptr(),
-                                             fill_qty,
-                                             cross_price,
-                                             fill_flags));
+    perform_callback_fill(inbound_tracker.ptr(),
+                          current_tracker.ptr(),
+                          fill_qty,
+                          cross_price,
+                          !inbound_tracker.open_qty(),
+                          !current_tracker.open_qty());
   }
   return fill_qty;
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::move_callbacks(Callbacks &target)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::move_callbacks(Callbacks &target)
 {
   COMPLAIN_ONCE("Ignoring call to deprecated method: move_callbacks");
   // We get to decide when callbacks happen.
   // And it *certainly* doesn't happen on another thread!
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::perform_callbacks()
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::perform_callbacks()
 {
   COMPLAIN_ONCE("Ignoring call to deprecated method: perform_callbacks");
   // We get to decide when callbacks happen.
 }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::callback_now()
-{
-  // protect against recursive calls
-  // callbacks generated in response to previous callbacks
-  // will be handled before this method returns.
-  if (!handling_callbacks_)
-  {
-    handling_callbacks_ = true;
-    for (auto cb = callbacks_.begin(); cb != callbacks_.end(); cb = callbacks_.erase(cb))
-    {
-      try
-      {
-        perform_callback(*cb);
-      }
-      catch (const std::exception &ex)
-      {
-        if (logger_)
-        {
-          logger_->log_exception("Caught exception during callback: ", ex);
-        }
-        else
-        {
-          std::cerr << "Caught exception during callback: " << ex.what() << std::endl;
-        }
-      }
-      catch (...)
-      {
-        if (logger_)
-        {
-          logger_->log_message("Caught unknown exception during callback");
-        }
-        else
-        {
-          std::cerr << "Caught unknown exception during callback" << std::endl;
-        }
-      }
-    }
-    handling_callbacks_ = false;
-  }
-}
+// template <typename OrderPtr, template <typename...> typename Multimap>
+// void OrderBook<OrderPtr, Multimap>::callback_now()
+// {
+//   for (auto &&cb : callbacks_)
+//   {
+//     perform_callback(cb);
+//   }
+//   callbacks_ = {};
+// }
 
-template <class OrderPtr>
-void OrderBook<OrderPtr>::perform_callback(TypedCallback &cb)
+template <typename OrderPtr, template <typename...> typename Multimap>
+void OrderBook<OrderPtr, Multimap>::perform_callback(const TypedCallback &cb)
 {
   switch (cb.type)
   {
@@ -1137,9 +1117,9 @@ void OrderBook<OrderPtr>::perform_callback(TypedCallback &cb)
   }
 }
 
-template <class OrderPtr>
+template <typename OrderPtr, template <typename...> typename Multimap>
 std::ostream &
-OrderBook<OrderPtr>::log(std::ostream &out) const
+OrderBook<OrderPtr, Multimap>::log(std::ostream &out) const
 {
   for (auto ask = asks_.rbegin(); ask != asks_.rend(); ++ask)
   {

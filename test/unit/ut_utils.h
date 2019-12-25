@@ -61,8 +61,9 @@ bool replace_and_verify(OrderBook& order_book,
   // Calculate
   Quantity expected_order_qty = order->order_qty() + size_change;
   Quantity expected_open_qty = order->open_qty() + size_change - match_qty;
-  Price expected_price = 
-      (new_price == PRICE_UNCHANGED) ? order->price() : new_price;
+  Price expected_price =
+      (new_price == PRICE_UNCHANGED) ? order->price()
+        : new_price;
 
   // Perform
   order_book.replace(order, size_change, new_price);
@@ -91,7 +92,7 @@ bool replace_and_verify(OrderBook& order_book,
 template <class OrderPtr>
 class FillCheck {
 public:
-  FillCheck(OrderPtr order, 
+  FillCheck(OrderPtr order,
             Quantity filled_qty,
             Cost filled_cost,
             OrderConditions conditions = 0)
@@ -116,39 +117,39 @@ public:
 
   void verify_filled() {
     if (expected_filled_qty_ !=  order_->filled_qty()) {
-      std::cout << "filled_qty " << order_->filled_qty() 
+      std::cout << "filled_qty " << order_->filled_qty()
                 << " expected " << expected_filled_qty_ << std::endl;
       throw std::runtime_error("Unexpected filled quantity");
     }
     if (expected_open_qty_ !=  order_->open_qty()) {
-      std::cout << "open_qty " << order_->open_qty() 
+      std::cout << "open_qty " << order_->open_qty()
                 << " expected " << expected_open_qty_ << std::endl;
       throw std::runtime_error("Unexpected open quantity");
     }
     if (expected_filled_cost_ !=  order_->filled_cost()) {
-      std::cout << "filled_cost " << order_->filled_cost() 
+      std::cout << "filled_cost " << order_->filled_cost()
                 << " expected " << expected_filled_cost_ << std::endl;
       throw std::runtime_error("Unexpected filled cost");
     }
     // If the order was filled, and is not complete
     if (order_->state() != simple::os_complete && !expected_open_qty_) {
-      std::cout << "state " << order_->state() 
+      std::cout << "state " << order_->state()
                 << " expected " << simple::os_complete << std::endl;
       throw std::runtime_error("Unexpected state with no open quantity");
     // Else If the order was not filled
     } else if (expected_open_qty_) {
       bool IOC = ((conditions_ & oc_immediate_or_cancel) != 0);
       if (order_->state() != simple::os_accepted && !IOC) {
-        std::cout << "state " << order_->state() 
+        std::cout << "state " << order_->state()
                   << " expected " << simple::os_accepted << std::endl;
         throw std::runtime_error("Unexpected state with open quantity");
       }
       if (order_->state() != simple::os_cancelled && IOC) {
-        std::cout << "state " << order_->state() 
+        std::cout << "state " << order_->state()
                   << " expected " << simple::os_cancelled << std::endl;
         throw std::runtime_error("Unexpected state for IOC with open quantity");
       }
-    } 
+    }
   }
 };
 

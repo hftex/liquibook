@@ -16,7 +16,7 @@ using book::OrderBook;
 using simple::SimpleOrder;
 
 typedef SimpleOrder* OrderPtr;
-typedef OrderBook<OrderPtr> TypedOrderBook;
+typedef OrderBook<OrderPtr, Multimap> TypedOrderBook;
 typedef DepthOrderBook<OrderPtr> TypedDepthOrderBook;
 typedef TypedDepthOrderBook::DepthTracker DepthTracker;
 
@@ -51,7 +51,7 @@ public:
   {
     rejects_.push_back(order);
   }
-  virtual void on_fill(const OrderPtr& order, 
+  virtual void on_fill(const OrderPtr& order,
                        const OrderPtr& , // matched_order
                        Quantity ,        // fill_qty
                        Cost)             // fill_cost
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(TestOrderBookCallbacks)
   SimpleOrder order4(true,  3250, 600);
 
   OrderBookCbListener listener;
-  OrderBook<OrderPtr> order_book;
+  OrderBook<OrderPtr, Multimap> order_book;
   order_book.set_order_book_listener(&listener);
   // Add order, should be accepted
   order_book.add(&order0);
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(TestOrderBookCallbacks)
   BOOST_CHECK_EQUAL(0, listener.changes_.size());  // NO CHANGE
 }
 
-class DepthCbListener 
+class DepthCbListener
       : public TypedDepthOrderBook::TypedDepthListener
 {
 public:
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(TestDepthCallbacks)
   listener.reset();
 }
 
-class BboCbListener 
+class BboCbListener
       : public TypedDepthOrderBook::TypedBboListener
 {
   public:
@@ -373,7 +373,7 @@ BOOST_AUTO_TEST_CASE(TestBboCallbacks)
   listener.reset();
 }
 
-BOOST_AUTO_TEST_CASE(TestTradeCallbacks) 
+BOOST_AUTO_TEST_CASE(TestTradeCallbacks)
 {
   SimpleOrder order0(false, 3250, 100);
   SimpleOrder order1(true,  3250, 800);

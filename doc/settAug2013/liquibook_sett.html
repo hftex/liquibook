@@ -129,7 +129,7 @@
 
 <p>
   The FAST protocol is a compression and encoding mechanism for streaming data.
-  QuickFAST is an implementation of the FAST protocol in C++ for encoding and 
+  QuickFAST is an implementation of the FAST protocol in C++ for encoding and
   decoding message streams using the FAST protocol.
 </p>
 
@@ -152,7 +152,7 @@
 
 <p>
   The example exchange generates orders, simulating the receipt of orders from
-  traders.  A true exchange takes orders from traders by means of an API - 
+  traders.  A true exchange takes orders from traders by means of an API -
   often via the FIX protocol.  For the purposes of this paper, internally
   generated orders will suffice.
 </p>
@@ -164,14 +164,14 @@
   orders.  This is done by means of a limit order book.  The limit order book
   keeps these orders sorted so that when multiple existing orders can match a
   new inbound order, the matching is performed in a sequence determined by
-  established exchange rules.  The example exchange uses Liquibook's 
+  established exchange rules.  The example exchange uses Liquibook's
   DepthOrderBook class to maintain the limit order book.
 </p>
 
 <h3>Match Buy and Sell Orders</h3>
 
 <p>
-  The example exchange must match new inbound orders against those in the 
+  The example exchange must match new inbound orders against those in the
   limit order book.  The exchange must detect a match, and fill the appropriate
   orders.  Liquibook's order book classes naturally includes matching
   capability.
@@ -192,11 +192,11 @@
 <h3>Aggregate the Top 5 Price Levels into Depth</h3>
 
 <p>
-  While a full order book feed is useful, some exchanges choose to send 
+  While a full order book feed is useful, some exchanges choose to send
   aggregated forms of data instead, known as depth.  Rather than
   representing individual orders, depth models price levels as a whole.
-  An exchange will also limit the number of levels distributed - top 5 and 
-  top 10 are common limits.  
+  An exchange will also limit the number of levels distributed - top 5 and
+  top 10 are common limits.
 </p>
 <p>
   The example exchange goes through the extra step and complexity of building
@@ -208,7 +208,7 @@
 <h3>Determine Changes to Depth in Response to an Event</h3>
 
 <p>
-  It is not enough to maintain the depth.  In order to produce an 
+  It is not enough to maintain the depth.  In order to produce an
   incremental feed, the example exchange must also be able to determine which
   levels of the depth have changed.  A change can happen to one or more
   levels in the depth, on both the buy and sell sides, in response to a
@@ -225,7 +225,7 @@
   flow in the exchange.  Feeds in which clients are notified of all possible
   order detail are known as "quote" feeds or "full order book" feeds, while
   those which aggregate orders by price are called "depth" feeds.  A "BBO"
-  feed gives only the top-level quote for a security, and a "trade" feed 
+  feed gives only the top-level quote for a security, and a "trade" feed
   reflects all trades, or matched orders.  Liquibook has support for building
   all of these feeds.
 </p>
@@ -338,7 +338,7 @@ public:
 </p>
 
 <p>
-  Next is a method to add an order to the order book.  <code>add()</code> 
+  Next is a method to add an order to the order book.  <code>add()</code>
   accepts an order pointer, and condition flags for special conditions, like
   an immediate or cancel order.  Note that there are also methods (not used in
   the example project) to cancel an order and to replace an order.
@@ -364,10 +364,10 @@ public:
 namespace liquibook { namespace book {
 
 /// @brief Implementation of order book child class, that incorporates
-///        aggregate depth tracking.  Overrides perform_callback() method to 
+///        aggregate depth tracking.  Overrides perform_callback() method to
 //         track depth aggregated by price.
 template <class OrderPtr = Order*, int SIZE = 5>
-class DepthOrderBook : public OrderBook<OrderPtr> {
+class DepthOrderBook : public OrderBook<OrderPtr, Multimap> {
 public:
   typedef Depth<SIZE> DepthTracker;
   typedef BboListener<DepthOrderBook >TypedBboListener;
@@ -408,16 +408,16 @@ private:
 </p>
 
 <p>
-  To build the exchange, the publisher must create a 
+  To build the exchange, the publisher must create a
   <code>book::DepthOrderBook</code>, and it set the trade listener and depth
-  listener.  While handling these callbacks, the publisher will need to 
+  listener.  While handling these callbacks, the publisher will need to
   update the feed clients with trade and depth update messages.
 </p>
 
 <p>
   Note that in some of the callbacks, a pointer to the order book is provided,
   while a pointer to the order is provided in others.
-  This gives the publisher two opportunities to provide additional fields and 
+  This gives the publisher two opportunities to provide additional fields and
   logic through inheritance.  The publisher takes advantage of this, providing
   access to the symbol of the order book's security:
 </p>
@@ -456,7 +456,7 @@ private:
 
 <p>
   The <code>ExampleOrderBook</code> class manages the order book and
-  depth for a single security.  Since exchanges handle multiple securities, 
+  depth for a single security.  Since exchanges handle multiple securities,
   somewhere the publisher needs to create an order book for each security, and
   maintain a mapping from a symbol to its order book.  The publisher does this
   in the <code>Exchange</code> class:
@@ -486,7 +486,7 @@ private:
 } }
 </pre>
 
-<p> 
+<p>
   The <code>Exchange</code> class has only three methods: a
   constructor, a method to add an order book, and a method to handle an order.
   As expected, it maintains a map of order books.  It also maintains pointers
@@ -555,7 +555,7 @@ Exchange::add_order(const std::string&amp; symbol, OrderPtr&amp; order)
 <h3>Order Class</h3>
 
 <p>
-  Liquibook requires that the application define an order class to represent 
+  Liquibook requires that the application define an order class to represent
   an order to match.  Liquibook requires that it meet the interface defined
   in the class <code>src/book/order.h</code>:
 </p>
@@ -583,7 +583,7 @@ public:
 </pre>
 
 <p>
-  The publisher defines <code>Order</code> to implement the 
+  The publisher defines <code>Order</code> to implement the
   <code>book::Order</code> interface:
 </p>
 
@@ -678,7 +678,7 @@ Order::price() const
 </pre>
 
 <p>
-  There are two implications - first, that the publisher is limited to penny 
+  There are two implications - first, that the publisher is limited to penny
   precision.  This is suitable for purposes of the example, but may need to be
   increased for other use cases.  The second implication is that all securities
   in the publisher have the same precision - since a static variable is used to
@@ -688,7 +688,7 @@ Order::price() const
 <h3>QuickFAST Templates</h3>
 
 <p>
-  To transmit messages using the FAST protocol, one must first decide on the 
+  To transmit messages using the FAST protocol, one must first decide on the
   messages to transmit on the feed.  This exchange will produce a trade feed
   and an incremental depth feed.  A simplified view of a trade consists of a
   symbol, a quantity, and a trade price.  The publisher alters this slightly
@@ -697,9 +697,9 @@ Order::price() const
 </p>
 
 <p>
-  QuickFAST uses XML files, called templates to describe the messages in the 
-  feed protocol.  The example's templates can be found in the file 
-  <code>examples/depth_feed_publisher/depth.xml</code>.  The trade message 
+  QuickFAST uses XML files, called templates to describe the messages in the
+  feed protocol.  The example's templates can be found in the file
+  <code>examples/depth_feed_publisher/depth.xml</code>.  The trade message
   template looks like this:
 </p>
 
@@ -730,7 +730,7 @@ Order::price() const
   Note that the tag names within the <code>&lt;template&gt;</code> tag
   indicate the type of the field.  The reader may be surprised to see a
   currency field (Cost) represented as an integer (uint32).  This, however is
-  consistent with Liquibook's internal storage of prices as as integer.  
+  consistent with Liquibook's internal storage of prices as as integer.
   Liquibook's design decision is thus carried forward to the feed protocol,
   requiring the clients to convert these prices back to their decimal format.
 </p>
@@ -793,7 +793,7 @@ Order::price() const
 </pre>
 
 <p>
-  The depth message begins with the same 4 fields as the trade message: 
+  The depth message begins with the same 4 fields as the trade message:
   message type, sequence number, timestamp, and symbol.  The depth message also
   includes two sequences, or  variable-length lists.  These sequences
   represent the changed bid and ask levels of the depth for the message
@@ -802,14 +802,14 @@ Order::price() const
 </p>
 
 <p>
-  Each changed depth level begins with a level number, indicating which level 
-  has changed.  If the exchange were to produce all depth levels on every 
+  Each changed depth level begins with a level number, indicating which level
+  has changed.  If the exchange were to produce all depth levels on every
   change, this would not be necessary.  Because in an incremental feed the
   sequence element could represent any of the 5 levels, it is required.
 </p>
 
 <p>
-  Order count indicates the number of orders which were aggregated at this 
+  Order count indicates the number of orders which were aggregated at this
   level.  If the order count is 0, it indicates a deleted level.  Price is the
   price common to all the aggregated orders at this level.  As in the trade
   message, it is represented by an integer.  Finally, aggregate quantity shows
@@ -820,7 +820,7 @@ Order::price() const
 
 <p>
   With the template in place, the publisher (and subscriber) must use
-  QuickFAST to put the templates to use for encoding (and decoding).  The 
+  QuickFAST to put the templates to use for encoding (and decoding).  The
   publisher (and subscriber) do this by means of the
   <code>TemplateConsumer</code> class:
 </p>
@@ -831,7 +831,7 @@ namespace liquibook { namespace examples {
 
 class TemplateConsumer {
 public:
-  static QuickFAST::Codecs::TemplateRegistryPtr 
+  static QuickFAST::Codecs::TemplateRegistryPtr
              parse_templates(const std::string&amp; template_filename);
 
   // Trade field identities
@@ -861,7 +861,7 @@ public:
 
 <p>
   The <code>TemplateConsumer</code> class also has a static
-  <code>parse_templates()</code> method for parsing of templates.  It also 
+  <code>parse_templates()</code> method for parsing of templates.  It also
   includes several static members of type
   <code>const QuickFAST::Messages::FieldIdentityCPtr</code>.  These members
   are used by QuickFAST to establish identities of fields within the various
@@ -876,7 +876,7 @@ public:
 </p>
 
 <p>
-  These members are initialized in a manner consistent with the template 
+  These members are initialized in a manner consistent with the template
   definition:
 </p>
 
@@ -903,7 +903,7 @@ const FieldIdentity TemplateConsumer::id_timestamp_("Timestamp");
 
 <div class="listing">tempate_consumer.cpp: TemplateConsumer class implementation, continued</div>
 <pre class="code">
-QuickFAST::Codecs::TemplateRegistryPtr 
+QuickFAST::Codecs::TemplateRegistryPtr
 TemplateConsumer::parse_templates(const std::string& template_filename)
 {
   std::ifstream template_stream(template_filename.c_str());
@@ -911,14 +911,14 @@ TemplateConsumer::parse_templates(const std::string& template_filename)
   return parser.parse(template_stream);
 }
 
-} } 
+} }
 </pre>
 
 <p>
   The <code>parse_templates()</code> method opens an input file stream using
   the filename passed to it.  Then it creates a
   <code>QuickFAST::Codecs::XMLTemplateParser</code> and calls the
-  <code>parse()</code> method on it, passing it the input file stream.  This 
+  <code>parse()</code> method on it, passing it the input file stream.  This
   parses the template file, and produces the
   <code>QuickFAST::Codecs::TemplateRegistryPtr</code> which preserves the
   parsed form of the template file.
@@ -930,7 +930,7 @@ TemplateConsumer::parse_templates(const std::string& template_filename)
   The publisher and subscriber communicate over TCP/IP using boost::ASIO.  The
   communication between publisher and subscriber is one way - the publisher
   only sends messages, and the subscriber only receives them.  The
-  communication is also one-to-many, as multiple subscribers connect to a 
+  communication is also one-to-many, as multiple subscribers connect to a
   single publisher.  Since QuickFAST encodes a stream of data, uniquely
   compressed for each recipient, the publisher will need to maintain a
   QuickFAST state for each subscriber's encoder.  This is done through a class
@@ -969,7 +969,7 @@ namespace liquibook { namespace examples {
   In addition to declaring some typedefs and a forward declaration, this
   snippet of code declares <code>DepthFeedSession</code>'s  constructor.  This
   constructor accepts (1) an IO Service object through which it can create a
-  TCP socket, (2) the <code>DepthFeedConnection</code> and (3) the parsed 
+  TCP socket, (2) the <code>DepthFeedConnection</code> and (3) the parsed
   QuickFAST templates, so it can encode outgoing messages.
 </p>
 
@@ -1013,9 +1013,9 @@ namespace liquibook { namespace examples {
 </pre>
 
 <p>
-  The reader may wonder why there are two methods for sending depth updates.  
+  The reader may wonder why there are two methods for sending depth updates.
   This is because the publisher produces an incremental feed for depth updates,
-  allowing only the changed depth levels to be published to the subscriber, 
+  allowing only the changed depth levels to be published to the subscriber,
   rather than all 5 levels of depth.  This is particularly effective because of
   the nature of this data - most changes to depth are at the top one or two
   levels of the limit order book.
@@ -1025,11 +1025,11 @@ namespace liquibook { namespace examples {
   Note that the trade feed is not an incremental feed - each trade stands on
   its own.  This could be different if the trade carried accumulating values,
   such as volume for the day, or average traded price.  In this case, an
-  incremental feed may be suitable for trades as well.  
+  incremental feed may be suitable for trades as well.
 </p>
 
 <p>
-  For the depth feed, two update methods are provided, for sending an 
+  For the depth feed, two update methods are provided, for sending an
   incremental update, and for sending a full update.  Even though the depth
   feed is an incremental feed, it is necessary to send full updates on
   occasion.  A full update is required, for example, when the subscriber does
@@ -1043,7 +1043,7 @@ namespace liquibook { namespace examples {
 
 <div class="listing">depth_feed_connection.h: DepthFeedSession class declaration, continued</div>
 <pre class="code">
-  private:       
+  private:
     bool connected_;
     uint64_t seq_num_;
 
@@ -1090,7 +1090,7 @@ namespace liquibook { namespace examples {
 </pre>
 
 <p>
-  Finally, there are two private methods, to set the sequence number on a 
+  Finally, there are two private methods, to set the sequence number on a
   message, and to handle a sent message:
 </p>
 
@@ -1171,11 +1171,11 @@ DepthFeedSession::send_trade(QuickFAST::Messages::FieldSet&amp; message)
 </pre>
 
 <p>
-  The <code>send_trade()</code> accepts an argument, reference to type 
+  The <code>send_trade()</code> accepts an argument, reference to type
   <code>QuickFAST::Messages::FieldSet</code>, which contains the method in a
   protocol-neutral format.  The method starts by setting the sequence number
   of the message by passing the field set to  <code>set_sequence_num()</code>.
-  The caller is responsible for filling out the other fields of the message, 
+  The caller is responsible for filling out the other fields of the message,
   while the session sets the sequence number.
 </p>
 
@@ -1233,7 +1233,7 @@ DepthFeedSession::send_incr_update(const std::string&amp; symbol,
 </p>
 
 <p>
-  The method also checks the <code>sent_symbols_</code> for the symbol of the 
+  The method also checks the <code>sent_symbols_</code> for the symbol of the
   message (provided as an argument) to ensure the security has been sent to the
   subscriber previously.  Should this be true, execution is similar to that of
   <code>send_trade()</code>, where the sequence number is set, the message is
@@ -1278,8 +1278,8 @@ DepthFeedSession::send_full_update(const std::string&amp; symbol,
 </pre>
 
 <p>
-  The first private method, <code>set_sequence_num()</code> is used to set 
-  the sequence number field in the outgoing message.  The sequence number is 
+  The first private method, <code>set_sequence_num()</code> is used to set
+  the sequence number field in the outgoing message.  The sequence number is
   unique to each session, so it must be encoded for each copy of the outbound
   message:
 </p>
@@ -1308,15 +1308,15 @@ DepthFeedSession::set_sequence_num(QuickFAST::Messages::FieldSet&amp; message)
 </p>
 
 <p>
-  The method attempts to update the sequence number field in the message, and 
+  The method attempts to update the sequence number field in the message, and
   if the sequence number is not yet present in the message, the field is added.
-  Using this technique, the message can be built once, and then have the 
+  Using this technique, the message can be built once, and then have the
   sequence number customized for each subscriber, without having to build the
   message from scratch for each subscriber.
 </p>
 
 <p>
-  The other private method, <code>on_send()</code> handles a sent message, 
+  The other private method, <code>on_send()</code> handles a sent message,
   logging any error code, and calling the <code>DepthFeedConnection</code>
   version of the method:
 </p>
@@ -1421,7 +1421,7 @@ DepthFeedSession::on_send(WorkingBufferPtr wb,
   and subscriber have a pool of buffers ready to be used again and again.
   The publisher and subscriber will reserve these buffers from
   <code>DepthFeedConnection</code>, bind them to an ASIO asynchronous callback,
-  and then restore the buffers back to the <code>DepthFeedConnection</code>. 
+  and then restore the buffers back to the <code>DepthFeedConnection</code>.
 </p>
 
 <p>
@@ -1443,11 +1443,11 @@ DepthFeedSession::on_send(WorkingBufferPtr wb,
 
     // Send an incremental update
     //   return true if all sessions could handle an incremental update
-    bool send_incr_update(const std::string&amp; symbol, 
+    bool send_incr_update(const std::string&amp; symbol,
                           QuickFAST::Messages::FieldSet&amp; message);
 
     // Send a full update to those which have not yet received for this symbol
-    void send_full_update(const std::string&amp; symbol, 
+    void send_full_update(const std::string&amp; symbol,
                           QuickFAST::Messages::FieldSet&amp; message);
 </pre>
 
@@ -1467,7 +1467,7 @@ DepthFeedSession::on_send(WorkingBufferPtr wb,
                    const boost::system::error_code&amp; error);
 
     // Handle a received message
-    void on_receive(BufferPtr bp, 
+    void on_receive(BufferPtr bp,
                     const boost::system::error_code&amp; error,
                     std::size_t bytes_transferred);
     // Handle a sent message
@@ -1525,7 +1525,7 @@ DepthFeedSession::on_send(WorkingBufferPtr wb,
 
 <p>
   The <code>DepthFeedConnection</code> constructor derives the configuration
-  variables by passing the command-line arguments to the 
+  variables by passing the command-line arguments to the
   <code>*_from_args()</code> methods:
 </p>
 
@@ -1543,7 +1543,7 @@ DepthFeedConnection::DepthFeedConnection(int argc, const char* argv[])
 
 <p>
   It also invokes <code>parse_templates()</code> to parse the QuickFAST
-  templates, and initializes the subscriber socket.  Next, 
+  templates, and initializes the subscriber socket.  Next,
   <code>connect()</code> does a standard ASIO asynchronous connection, using
   <code>on_connect()</code> as its callback:
 </p>
@@ -1584,7 +1584,7 @@ DepthFeedConnection::accept()
   }
   SessionPtr session(new DepthFeedSession(ios_, this, templates_));
   acceptor_-&gt;async_accept(
-      session-&gt;socket(), 
+      session-&gt;socket(),
       boost::bind(&amp;DepthFeedConnection::on_accept, this, session, _1));
 }
 </pre>
@@ -1630,7 +1630,7 @@ DepthFeedConnection::set_reset_handler(ResetHandler handler)
 
 <p>
   As stated above, the <code>DepthFeedConnection</code> uses buffer pools to
-  reduce heap allocations and deallocations.  The following two methods 
+  reduce heap allocations and deallocations.  The following two methods
   provide unused buffers to the caller:
 </p>
 
@@ -1801,7 +1801,7 @@ DepthFeedConnection::on_accept(SessionPtr session,
   the other hand, only wants one connection.
 </p>
 <p>
-  In the case of a successful connection, the publisher saves off the session, 
+  In the case of a successful connection, the publisher saves off the session,
   and marks it as connected, so that messages may be sent to it.  If there is
   failure, the session is deleted (by resetting the shared pointer) and the
   publisher waits momentarily before starting again.
@@ -1878,7 +1878,7 @@ void
 DepthFeedConnection::issue_read()
 {
   BufferPtr bp = reserve_recv_buffer();
-  RecvHandler recv_handler = boost::bind(&amp;DepthFeedConnection::on_receive, 
+  RecvHandler recv_handler = boost::bind(&amp;DepthFeedConnection::on_receive,
                                          this, bp, _1, _2);
   boost::asio::mutable_buffers_1 buffer(
       boost::asio::buffer(*bp, bp-&gt;size()));
@@ -1887,7 +1887,7 @@ DepthFeedConnection::issue_read()
 </pre>
 
 <p>
-  <code>issue_read()</code> reserves a buffer, binds the buffer to the 
+  <code>issue_read()</code> reserves a buffer, binds the buffer to the
   <code>on_receive()</code> method, and issues the asynchronous read.
 </p>
 <p>
@@ -1942,7 +1942,7 @@ DepthFeedConnection::port_from_args(int argc, const char* argv[])
 } } // End namespace
 </pre>
 <p>
-  The first method looks for a -t followed by a template file name.  The 
+  The first method looks for a -t followed by a template file name.  The
   second looks foe a -h followed by a host name.  The last one looks for a -p
   followed by a port number.  All three return default values.
 </p>
@@ -1951,7 +1951,7 @@ DepthFeedConnection::port_from_args(int argc, const char* argv[])
 <p>
   At this point, the publisher is able to accept subscriber connections and
   route QuickFAST messages to the subscriber.  What is missing is handling
-  Liquibook events, and creating the QuickFAST messages to send.  As shown in 
+  Liquibook events, and creating the QuickFAST messages to send.  As shown in
   <a href="#figure2">figure 2</a>, the publisher needs a properly-typed
   <code>TradeListener</code> for trade events, and a properly-typed
   <code>DepthListener</code> for depth events.
@@ -1991,7 +1991,7 @@ public:
 <pre class="code">
 namespace liquibook { namespace book {
 
-/// @brief listener of depth events.  Implement to build an aggregate depth 
+/// @brief listener of depth events.  Implement to build an aggregate depth
 /// feed.
 template &lt;class OrderBook &gt;
 class DepthListener {
@@ -2020,11 +2020,11 @@ class DepthFeedPublisher : public ExampleOrderBook::TypedDepthListener,
 </pre>
 
 <p>
-  The <code>DepthFeedPublisher</code> class implements both the 
-  <code>ExampleOrderBook::TypedDepthListener</code> and the 
+  The <code>DepthFeedPublisher</code> class implements both the
+  <code>ExampleOrderBook::TypedDepthListener</code> and the
   <code>ExampleOrderBook::TypedTradeListener</code> interfaces, which bind the
-  <code>book::DepthListener</code> and the <code>book::TradeListener</code> 
-  templates to those used in <code>ExampleOrderBook</code>. 
+  <code>book::DepthListener</code> and the <code>book::TradeListener</code>
+  templates to those used in <code>ExampleOrderBook</code>.
   <code>DepthFeedPublisher</code> also inherits from
   <code>TemplateConsumer</code>, but this is simply a convenience (to reduce
   the need for name qualifiers), as <code>TemplateConsumer</code>'s data and
@@ -2124,7 +2124,7 @@ private:
 
 <div class="listing">depth_feed_publisher.cpp: DepthFeedPublisher class implementation</div>
 <pre class="code">
-namespace liquibook { namespace examples { 
+namespace liquibook { namespace examples {
 
 using namespace QuickFAST::Messages;
 
@@ -2141,7 +2141,7 @@ DepthFeedPublisher::set_connection(DepthFeedConnection* connection)
 </pre>
 
 <p>
-  The <code>DepthFeedPublisher</code>'s primary responsibility is to build 
+  The <code>DepthFeedPublisher</code>'s primary responsibility is to build
   feed messages, in response to events.  The first event handler is
   <code>on_trade()</code>:
 </p>
@@ -2157,9 +2157,9 @@ DepthFeedPublisher::on_trade(
 {
   // Publish trade
   QuickFAST::Messages::FieldSet message(20);
-  const ExampleOrderBook* exob = 
+  const ExampleOrderBook* exob =
           dynamic_cast&lt;const ExampleOrderBook*&gt;(order_book);
-  std::cout &lt;&lt; "Got trade for " &lt;&lt; exob-&gt;symbol() 
+  std::cout &lt;&lt; "Got trade for " &lt;&lt; exob-&gt;symbol()
             &lt;&lt; " qty " &lt;&lt; qty
             &lt;&lt; " cost " &lt;&lt; cost &lt;&lt; std::endl;
   build_trade_message(message, exob-&gt;symbol(), qty, cost);
@@ -2188,7 +2188,7 @@ DepthFeedPublisher::on_depth_change(
 {
   // Publish changed levels of order book
   QuickFAST::Messages::FieldSet message(20);
-  const ExampleOrderBook* exob = 
+  const ExampleOrderBook* exob =
           dynamic_cast&lt;const ExampleOrderBook*&gt;(order_book);
   build_depth_message(message, exob-&gt;symbol(), tracker, false);
   if (!connection_-&gt;send_incr_update(exob-&gt;symbol(), message)) {
@@ -2212,7 +2212,7 @@ DepthFeedPublisher::on_depth_change(
 <p>
   The reader will recall that the call to
   <code>DepthFeedConnection::send_incr_update()</code> returns true if and only
-  if all of the clients could handle the message.  If not, false is returned, 
+  if all of the clients could handle the message.  If not, false is returned,
   and <code>on_depth_change()</code> builds and sends a full update instead.
   In the steady state, only the incremental message need by built.
 </p>
@@ -2265,7 +2265,7 @@ DepthFeedPublisher::build_depth_message(
 
   // Build the changed levels
   book::ChangeId last_published_change = tracker-&gt;last_published_change();
-  
+
   // Build changed bids
   {
     SequencePtr bids(new Sequence(id_bids_length_, 1));
@@ -2308,14 +2308,14 @@ DepthFeedPublisher::build_depth_message(
     message.addField(id_asks_, FieldSequence::create(asks));
   }
   std::cout &lt;&lt; "Encoding " &lt;&lt; (full_message ? "full" : "incr")
-            &lt;&lt; " depth message for symbol " &lt;&lt; symbol 
+            &lt;&lt; " depth message for symbol " &lt;&lt; symbol
             &lt;&lt; " with " &lt;&lt; bid_count &lt;&lt; " bids, "
             &lt;&lt; ask_count &lt;&lt; " asks" &lt;&lt; std::endl;
 }
 </pre>
 
 <p>
-  This method starts like <code>add_trade()</code>, adding the timestamp and 
+  This method starts like <code>add_trade()</code>, adding the timestamp and
   symbol fields.  Next, two sequences are built, for the changed bid and ask
   levels.  To support an incremental feed, Liquibook tracks a change number
   (called <code>ChangeId</code>) on each depth level, and the ID of the last
@@ -2327,7 +2327,7 @@ DepthFeedPublisher::build_depth_message(
 <p>
   In <code>build_depth_message()</code>, a bid sequence is created, and an
   associated length is attached.  The changed bid levels are each added to the
-  sequence through calls to <code>build_depth_level()</code>.  The iteration 
+  sequence through calls to <code>build_depth_level()</code>.  The iteration
   logic here must be careful to not move beyond the last bid level.  Finally,
   the sequence is added to the message.  The same is done for changed ask
   levels.
@@ -2347,7 +2347,7 @@ DepthFeedPublisher::build_depth_level(
 {
   FieldSetPtr level_fields(new FieldSet(4));
   level_fields-&gt;addField(id_level_num_, FieldUInt8::create(level_index));
-  level_fields-&gt;addField(id_order_count_, 
+  level_fields-&gt;addField(id_order_count_,
                          FieldUInt32::create(level-&gt;order_count()));
   level_fields-&gt;addField(id_price_,
                          FieldUInt32::create(level-&gt;price()));
@@ -2415,13 +2415,13 @@ typedef std::vector<SecurityInfo> SecurityVector;
 <p>
   The base price serves as a basis for generating random prices for the
   example exchange.  <code>main()</code> keeps this security information in a
-  <code>SecurityVector</code>  and populates it in the 
+  <code>SecurityVector</code>  and populates it in the
   <code>create_securities()</code> method, later in <code>main()</code>.
 </p>
 
 <p>
   The <code>main()</code> function begins by creating the
-  <code>DepthFeedConnection</code>, and uses Boost's thread library to 
+  <code>DepthFeedConnection</code>, and uses Boost's thread library to
   create a background thread to accept connections from subscribers:
 </p>
 
@@ -2441,7 +2441,7 @@ int main(int argc, const char* argv[])
 
 <p>
   Next, the <code>DepthFeedPublisher</code> and the <code>Exchange</code> are
-  created, and the<code>DepthFeedPublisher</code> is made aware of the 
+  created, and the<code>DepthFeedPublisher</code> is made aware of the
   <code>DepthFeedConnection</code>:
 </p>
 
@@ -2474,7 +2474,7 @@ int main(int argc, const char* argv[])
 
   // Populate exchange with securities
   populate_exchange(exchange, securities);
-  
+
   // Generate random orders
   generate_orders(exchange, securities);
 
@@ -2575,10 +2575,10 @@ generate_orders(examples::Exchange&amp; exchange, const SecurityVector&amp; secu
 
 <p>
   With the publisher in place, focus turns to the subscriber.  The subscriber
-  must connect to the publisher, decode the FAST feed, recreate the depth 
+  must connect to the publisher, decode the FAST feed, recreate the depth
   state for each security and display the results.  As noted earlier, the
-  connection is handled by the <code>DepthFeedConnection</code> class.  The 
-  decoding and display of messages is handled by a the 
+  connection is handled by the <code>DepthFeedConnection</code> class.  The
+  decoding and display of messages is handled by a the
   <code>DepthFeedSubscriber</code> class:
 </p>
 
@@ -2617,7 +2617,7 @@ namespace liquibook { namespace examples {
 
 <p>
   These members include a QuickFAST decoder, an order book for each security
-  (kept in a <code>std::map</code>), and the expected sequence number.  The 
+  (kept in a <code>std::map</code>), and the expected sequence number.  The
   sequence number is tracked to validate the feed, so that the subscriber is
   sure that every message from the publisher has been handled.
 </p>
@@ -2670,7 +2670,7 @@ DepthFeedSubscriber::DepthFeedSubscriber(
 
 <p>
   The constructor passes the templates to the decoder, and initializes the
-  expected sequence number.  Next is the <code>handle_reset()</code> method, 
+  expected sequence number.  Next is the <code>handle_reset()</code> method,
   which is called when the connection to the publisher is reset:
 </p>
 
@@ -2711,7 +2711,7 @@ DepthFeedSubscriber::handle_message(BufferPtr&amp; bp, size_t bytes_transferred)
     return false;
   }
   if (seq_num != expected_seq_) {
-    std::cout &lt;&lt; "ERROR: Got Seq num " &lt;&lt; seq_num &lt;&lt; ", expected " 
+    std::cout &lt;&lt; "ERROR: Got Seq num " &lt;&lt; seq_num &lt;&lt; ", expected "
               &lt;&lt; expected_seq_ &lt;&lt; std::endl;
     return false;
   }
@@ -2737,7 +2737,7 @@ DepthFeedSubscriber::handle_message(BufferPtr&amp; bp, size_t bytes_transferred)
     result = handle_trade_message(symbol, seq_num, timestamp, msg);
     break;
   default:
-    std::cout &lt;&lt; "ERROR: Unknown message type " &lt;&lt; msg_type 
+    std::cout &lt;&lt; "ERROR: Unknown message type " &lt;&lt; msg_type
               &lt;&lt; " seq num " &lt;&lt; seq_num &lt;&lt; std::endl;
     return false;
   }
@@ -2747,17 +2747,17 @@ DepthFeedSubscriber::handle_message(BufferPtr&amp; bp, size_t bytes_transferred)
 </pre>
 
 <p>
-  This method first decodes the FAST message.  This is done by stuffing the 
+  This method first decodes the FAST message.  This is done by stuffing the
   message contents into a QuickFAST buffer specific for decoding.  Next, a
   message builder and consumer are created and associated, and the message is
-  decoded into the builder.  After this, the  message is available from the 
+  decoded into the builder.  After this, the  message is available from the
   consumer.
 </p>
 
 <p>
   The common fields are then checked, by using the type-specific extractors on
   the <code>QuickFAST::Messages::Message</code> class, such as
-  <code>getUnsignedInteger()</code>.  This starts with the sequence number, 
+  <code>getUnsignedInteger()</code>.  This starts with the sequence number,
   which is validated against the expected sequence number.  Next the message
   type, the symbol, and the timestamp are extracted.  If any of these fail, the
   method exits with an error value.
@@ -2781,7 +2781,7 @@ DepthFeedSubscriber::log_depth(book::Depth&lt;5&gt;&amp; depth)
   printf("----------BID----------    ----------ASK----------\n");
   while (bid || ask) {
     if (bid &amp;&amp; bid-&gt;order_count()) {
-      printf("%8.2f %9d [%2d]", 
+      printf("%8.2f %9d [%2d]",
              (double)bid-&gt;price() / Order::precision_,
              bid-&gt;aggregate_qty(), bid-&gt;order_count());
       if (bid == depth.last_bid_level()) {
@@ -2833,7 +2833,7 @@ DepthFeedSubscriber::handle_depth_message(
 {
   size_t bids_length, asks_length;
   std::cout &lt;&lt; timestamp
-            &lt;&lt; " Got depth msg " &lt;&lt; seq_num 
+            &lt;&lt; " Got depth msg " &lt;&lt; seq_num
             &lt;&lt; " for symbol " &lt;&lt; symbol &lt;&lt; std::endl;
 
   // Create or find depth
@@ -2919,9 +2919,9 @@ DepthFeedSubscriber::handle_depth_message(
 </pre>
 
 <p>
-  This method has the common fields passed to it, and logs the symbol of the 
+  This method has the common fields passed to it, and logs the symbol of the
   message.  It then finds the proper depth object for the security, or creates
-  one if this is the first depth message for the security. 
+  one if this is the first depth message for the security.
 </p>
 <p>
   Next the method must iterate through the sequence of changed bids.  To do
@@ -2963,8 +2963,8 @@ DepthFeedSubscriber::handle_trade_message(
 
   double price = (double) cost / (qty * Order::precision_);
   std::cout &lt;&lt; timestamp
-            &lt;&lt; " Got trade msg " &lt;&lt; seq_num 
-            &lt;&lt; " for symbol " &lt;&lt; symbol 
+            &lt;&lt; " Got trade msg " &lt;&lt; seq_num
+            &lt;&lt; " for symbol " &lt;&lt; symbol
             &lt;&lt; ": " &lt;&lt; qty &lt;&lt; "@" &lt;&lt; price
             &lt;&lt; std::endl;
 
@@ -2977,7 +2977,7 @@ DepthFeedSubscriber::handle_trade_message(
 <p>
   Like <code>handle_depth_message()</code>, <code>handle_trade_message()</code>
   is passed the common fields.  It extracts the trade quantity and cost, from
-  which it calculates the price of the trade (after adjusting for the 
+  which it calculates the price of the trade (after adjusting for the
   precision).  The result is then logged.
 </p>
 
@@ -3018,8 +3018,8 @@ int main(int argc, const char* argv[])
 </pre>
 
 <p>
-  Next, the handlers for messages and connection resets are set up, and 
-  finally, the subscriber connects to the publisher.  This completes the 
+  Next, the handlers for messages and connection resets are set up, and
+  finally, the subscriber connects to the publisher.  This completes the
   subscriber application.
 </p>
 
@@ -3079,7 +3079,7 @@ int main(int argc, const char* argv[])
 </pre>
 
 <p>
-  These updates show the full depth for each security updated, and not just 
+  These updates show the full depth for each security updated, and not just
   the changed levels.  The first three updates shows the depth for various
   securities, followed by some trades and a depth update for a fourth security.
   The trades go hand-in-hand with a depth update.  Some depth updates cause
@@ -3096,14 +3096,14 @@ int main(int argc, const char* argv[])
 
 <p>
   Although much code has been walked through in this example, very little
-  custom code was related to the order book.  Most of the code was either 
+  custom code was related to the order book.  Most of the code was either
   general networking code using ASIO, or QuickFAST code.  In addition, the
   complexities of order book maintenance and depth-building are contained -
   most of the code shown was simple, or even trivial.
 </p>
 
 <p>
-  Liquibook makes it very simple to implement a limit order book matching 
+  Liquibook makes it very simple to implement a limit order book matching
   engine, whether you are building an exchange, or are a trader simulating an
   exchange's matching capability.
 </p>

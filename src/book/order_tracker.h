@@ -5,15 +5,19 @@
 
 #include "types.h"
 
-namespace liquibook { namespace book {
+namespace liquibook
+{
+namespace book
+{
 
-/// @brief Tracker of an order's state, to keep inside the OrderBook.  
+/// @brief Tracker of an order's state, to keep inside the OrderBook.
 ///   Kept separate from the order itself.
 template <typename OrderPtr>
-class OrderTracker {
+class OrderTracker
+{
 public:
   /// @brief construct
-  OrderTracker(const OrderPtr& order, OrderConditions conditions = 0);
+  OrderTracker(const OrderPtr &order, OrderConditions conditions = 0);
 
   OrderTracker() = default;
 
@@ -22,7 +26,7 @@ public:
 
   /// @brief fill an order
   /// @param qty the number of shares filled in this fill
-  void fill(Quantity qty); 
+  void fill(Quantity qty);
 
   /// @brief is there no remaining open quantity in this order?
   bool filled() const;
@@ -34,10 +38,10 @@ public:
   Quantity open_qty() const;
 
   /// @brief get the order pointer
-  const OrderPtr& ptr() const;
+  const OrderPtr &ptr() const;
 
   /// @brief get the order pointer
-  OrderPtr& ptr();
+  OrderPtr &ptr();
 
   /// @ brief is this order marked all or none?
   bool all_or_none() const;
@@ -56,19 +60,19 @@ private:
 
 template <class OrderPtr>
 OrderTracker<OrderPtr>::OrderTracker(
-  const OrderPtr& order,
-  OrderConditions conditions)
-: order_(order),
-  open_qty_(order->order_qty()),
-  reserved_(0),
-  conditions_(conditions)
+    const OrderPtr &order,
+    OrderConditions conditions)
+    : order_(order),
+      open_qty_(order->order_qty()),
+      reserved_(0),
+      conditions_(conditions)
 {
 #if defined(LIQUIBOOK_ORDER_KNOWS_CONDITIONS)
-  if(order->all_or_none())
+  if (order->all_or_none())
   {
     conditions |= oc_all_or_none;
   }
-  if(order->immediate_or_cancel())
+  if (order->immediate_or_cancel())
   {
     conditions |= oc_immediate_or_cancel;
   }
@@ -80,34 +84,31 @@ Quantity
 OrderTracker<OrderPtr>::reserve(int32_t reserved)
 {
   reserved_ += reserved;
-  return open_qty_  - reserved_;
+  return open_qty_ - reserved_;
 }
 
 template <class OrderPtr>
-void
-OrderTracker<OrderPtr>::change_qty(int32_t delta)
+void OrderTracker<OrderPtr>::change_qty(int32_t delta)
 {
-  if ((delta < 0 && 
-      (int)open_qty_ < std::abs(delta))) {
-    throw 
-        std::runtime_error("Replace size reduction larger than open quantity");
-  }
+  // if ((delta < 0 &&
+  //     (int)open_qty_ < std::abs(delta))) {
+  //   throw
+  //       std::runtime_error("Replace size reduction larger than open quantity");
+  // }
   open_qty_ += delta;
 }
 
 template <class OrderPtr>
-void
-OrderTracker<OrderPtr>::fill(Quantity qty) 
+void OrderTracker<OrderPtr>::fill(Quantity qty)
 {
-  if (qty > open_qty_) {
-    throw std::runtime_error("Fill size larger than open quantity");
-  }
+  // if (qty > open_qty_) {
+  //   throw std::runtime_error("Fill size larger than open quantity");
+  // }
   open_qty_ -= qty;
 }
 
 template <class OrderPtr>
-bool
-OrderTracker<OrderPtr>::filled() const
+bool OrderTracker<OrderPtr>::filled() const
 {
   return open_qty_ == 0;
 }
@@ -130,31 +131,30 @@ OrderTracker<OrderPtr>::open_qty() const
 }
 
 template <class OrderPtr>
-const OrderPtr&
+const OrderPtr &
 OrderTracker<OrderPtr>::ptr() const
 {
   return order_;
 }
 
 template <class OrderPtr>
-OrderPtr&
+OrderPtr &
 OrderTracker<OrderPtr>::ptr()
 {
   return order_;
 }
 
 template <class OrderPtr>
-bool
-OrderTracker<OrderPtr>::all_or_none() const
+bool OrderTracker<OrderPtr>::all_or_none() const
 {
   return bool(conditions_ & oc_all_or_none);
 }
 
 template <class OrderPtr>
-bool
-OrderTracker<OrderPtr>::immediate_or_cancel() const
+bool OrderTracker<OrderPtr>::immediate_or_cancel() const
 {
-    return bool((conditions_ & oc_immediate_or_cancel) != 0);
+  return bool((conditions_ & oc_immediate_or_cancel) != 0);
 }
 
-} }
+} // namespace book
+} // namespace liquibook
