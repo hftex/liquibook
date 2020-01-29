@@ -8,85 +8,86 @@
 #include "bbo_listener.h"
 #include "depth_listener.h"
 
-namespace liquibook { namespace book {
+namespace liquibook
+{
+namespace book
+{
 
 /// @brief Implementation of order book child class, that incorporates
 ///        aggregate depth tracking.
-template <typename OrderPtr, int SIZE = 5>
-class DepthOrderBook : public OrderBook<OrderPtr, Multimap> {
+template <typename OrderPtr, int SIZE = 5, template <typename...> typename Multimap = std::multimap>
+class DepthOrderBook : public OrderBook<OrderPtr, Multimap>
+{
 public:
   typedef Depth<SIZE> DepthTracker;
-  typedef BboListener<DepthOrderBook >TypedBboListener;
-  typedef DepthListener<DepthOrderBook >TypedDepthListener;
+  typedef BboListener<DepthOrderBook> TypedBboListener;
+  typedef DepthListener<DepthOrderBook> TypedDepthListener;
 
   /// @brief construct
-  DepthOrderBook(const std::string & symbol = "unknown");
+  DepthOrderBook(const std::string &symbol = "unknown");
 
   /// @brief set the BBO listener
-  void set_bbo_listener(TypedBboListener* bbo_listener);
+  void set_bbo_listener(TypedBboListener *bbo_listener);
 
   /// @brief set the depth listener
-  void set_depth_listener(TypedDepthListener* depth_listener);
+  void set_depth_listener(TypedDepthListener *depth_listener);
 
   // @brief access the depth tracker
-  DepthTracker& depth();
+  DepthTracker &depth();
 
   // @brief access the depth tracker
-  const DepthTracker& depth() const;
+  const DepthTracker &depth() const;
 
-  protected:
+protected:
   //////////////////////////////////
   // Implement virtual callback methods
   // needed to maintain depth book.
-  virtual void on_accept(const OrderPtr& order, Quantity quantity);
+  virtual void on_accept(const OrderPtr &order, Quantity quantity);
 
-  virtual void on_fill(const OrderPtr& order,
-    const OrderPtr& matched_order,
-    Quantity fill_qty,
-    Cost fill_cost,
-    bool inbound_order_filled,
-    bool matched_order_filled);
+  virtual void on_fill(const OrderPtr &order,
+                       const OrderPtr &matched_order,
+                       Quantity fill_qty,
+                       Cost fill_cost,
+                       bool inbound_order_filled,
+                       bool matched_order_filled);
 
-  virtual void on_cancel(const OrderPtr& order, Quantity quantity);
+  virtual void on_cancel(const OrderPtr &order, Quantity quantity);
 
-  virtual void on_replace(const OrderPtr& order,
-    Quantity current_qty,
-    Quantity new_qty,
-    Price new_price);
+  virtual void on_replace(const OrderPtr &order,
+                          Quantity current_qty,
+                          Quantity new_qty,
+                          Price new_price);
 
   virtual void on_order_book_change();
 
 private:
   DepthTracker depth_;
-  TypedBboListener* bbo_listener_;
-  TypedDepthListener* depth_listener_;
+  TypedBboListener *bbo_listener_;
+  TypedDepthListener *depth_listener_;
 };
 
-template <class OrderPtr, int SIZE>
-DepthOrderBook<OrderPtr, SIZE>::DepthOrderBook(const std::string & symbol)
-: OrderBook<OrderPtr, Multimap>(symbol),
-  bbo_listener_(nullptr),
-  depth_listener_(nullptr)
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+DepthOrderBook<OrderPtr, SIZE, Multimap>::DepthOrderBook(const std::string &symbol)
+    : OrderBook<OrderPtr, Multimap>(symbol),
+      bbo_listener_(nullptr),
+      depth_listener_(nullptr)
 {
 }
 
-template <class OrderPtr, int SIZE>
-void
-DepthOrderBook<OrderPtr, SIZE>::set_bbo_listener(TypedBboListener* listener)
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+void DepthOrderBook<OrderPtr, SIZE, Multimap>::set_bbo_listener(TypedBboListener *listener)
 {
   bbo_listener_ = listener;
 }
 
-template <class OrderPtr, int SIZE>
-void
-DepthOrderBook<OrderPtr, SIZE>::set_depth_listener(TypedDepthListener* listener)
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+void DepthOrderBook<OrderPtr, SIZE, Multimap>::set_depth_listener(TypedDepthListener *listener)
 {
   depth_listener_ = listener;
 }
 
-template <class OrderPtr, int SIZE>
-void
-DepthOrderBook<OrderPtr, SIZE>::on_accept(const OrderPtr& order, Quantity quantity)
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+void DepthOrderBook<OrderPtr, SIZE, Multimap>::on_accept(const OrderPtr &order, Quantity quantity)
 {
   // If the order is a limit order
   if (order->is_limit())
@@ -103,78 +104,81 @@ DepthOrderBook<OrderPtr, SIZE>::on_accept(const OrderPtr& order, Quantity quanti
     {
       // Add to bid or ask depth
       depth_.add_order(order->price(),
-        order->order_qty(),
-        order->is_buy());
+                       order->order_qty(),
+                       order->is_buy());
     }
   }
 }
 
-template <class OrderPtr, int SIZE>
-void
-DepthOrderBook<OrderPtr, SIZE>::on_fill(const OrderPtr& order,
-  const OrderPtr& matched_order,
-  Quantity quantity,
-  Cost fill_cost,
-  bool inbound_order_filled,
-  bool matched_order_filled)
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+void DepthOrderBook<OrderPtr, SIZE, Multimap>::on_fill(const OrderPtr &order,
+                                                       const OrderPtr &matched_order,
+                                                       Quantity quantity,
+                                                       Cost fill_cost,
+                                                       bool inbound_order_filled,
+                                                       bool matched_order_filled)
 {
   // If the matched order is a limit order
-  if (matched_order->is_limit()) {
+  if (matched_order->is_limit())
+  {
     // Inform the depth
     depth_.fill_order(matched_order->price(),
-      quantity,
-      matched_order_filled,
-      matched_order->is_buy());
+                      quantity,
+                      matched_order_filled,
+                      matched_order->is_buy());
   }
   // If the inbound order is a limit order
-  if (order->is_limit()) {
+  if (order->is_limit())
+  {
     // Inform the depth
     depth_.fill_order(order->price(),
-      quantity,
-      inbound_order_filled,
-      order->is_buy());
+                      quantity,
+                      inbound_order_filled,
+                      order->is_buy());
   }
 }
 
-template <class OrderPtr, int SIZE>
-void
-DepthOrderBook<OrderPtr, SIZE>::on_cancel(const OrderPtr& order, Quantity quantity)
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+void DepthOrderBook<OrderPtr, SIZE, Multimap>::on_cancel(const OrderPtr &order, Quantity quantity)
 {
   // If the order is a limit order
-  if (order->is_limit()) {
+  if (order->is_limit())
+  {
     // If the close erases a level
     depth_.close_order(order->price(),
-      quantity,
-      order->is_buy());
+                       quantity,
+                       order->is_buy());
   }
 }
 
-template <class OrderPtr, int SIZE>
-void
-DepthOrderBook<OrderPtr, SIZE>::on_replace(const OrderPtr& order,
-  Quantity current_qty,
-  Quantity new_qty,
-  Price new_price)
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+void DepthOrderBook<OrderPtr, SIZE, Multimap>::on_replace(const OrderPtr &order,
+                                                          Quantity current_qty,
+                                                          Quantity new_qty,
+                                                          Price new_price)
 {
   // Notify the depth
   depth_.replace_order(order->price(), new_price,
-    current_qty, new_qty, order->is_buy());
+                       current_qty, new_qty, order->is_buy());
 }
 
-template <class OrderPtr, int SIZE>
-void
-DepthOrderBook<OrderPtr, SIZE>::on_order_book_change()
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+void DepthOrderBook<OrderPtr, SIZE, Multimap>::on_order_book_change()
 {
   // Book was updated, see if the depth we track was effected
-  if (depth_.changed()) {
-    if (depth_listener_) {
+  if (depth_.changed())
+  {
+    if (depth_listener_)
+    {
       depth_listener_->on_depth_change(this, &depth_);
     }
-    if (bbo_listener_) {
+    if (bbo_listener_)
+    {
       ChangeId last_change = depth_.last_published_change();
       // May have been the first level which changed
       if ((depth_.bids()->changed_since(last_change)) ||
-        (depth_.asks()->changed_since(last_change))) {
+          (depth_.asks()->changed_since(last_change)))
+      {
         bbo_listener_->on_bbo_change(this, &depth_);
       }
     }
@@ -183,18 +187,19 @@ DepthOrderBook<OrderPtr, SIZE>::on_order_book_change()
   }
 }
 
-template <class OrderPtr, int SIZE>
-inline typename DepthOrderBook<OrderPtr, SIZE>::DepthTracker&
-DepthOrderBook<OrderPtr, SIZE>::depth()
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+inline typename DepthOrderBook<OrderPtr, SIZE, Multimap>::DepthTracker &
+DepthOrderBook<OrderPtr, SIZE, Multimap>::depth()
 {
   return depth_;
 }
 
-template <class OrderPtr, int SIZE>
-inline const typename DepthOrderBook<OrderPtr, SIZE>::DepthTracker&
-DepthOrderBook<OrderPtr, SIZE>::depth() const
+template <class OrderPtr, int SIZE, template <typename...> typename Multimap>
+inline const typename DepthOrderBook<OrderPtr, SIZE, Multimap>::DepthTracker &
+DepthOrderBook<OrderPtr, SIZE, Multimap>::depth() const
 {
   return depth_;
 }
 
-} }
+} // namespace book
+} // namespace liquibook
